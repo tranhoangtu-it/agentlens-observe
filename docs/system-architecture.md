@@ -1,29 +1,36 @@
-# AgentLens v0.2.0 — System Architecture
+# AgentLens v0.4.0 — System Architecture
 
 ## High-Level Architecture
 
 ```
+┌─────────────────────┐
+│   Python Agent      │
+│ @agentlens.trace    │──────────────────────────────────────────────────────────┐
+│ @agentlens.span     │                                                          │
+│ agentlens.log()     │                                                          │
+└─────────────────────┘                                                          │
+                                                                                 ▼
 ┌─────────────────────┐         ┌──────────────────────────┐         ┌──────────────────┐
-│   Python Agent      │         │   AgentLens Server       │         │  Browser         │
-│                     │         │  (FastAPI + SQLite)      │         │  Dashboard       │
+│  TypeScript Agent   │         │   AgentLens Server       │         │  Browser         │
+│  (Node 18+)         │         │  (FastAPI + SQLite)      │         │  Dashboard       │
 ├─────────────────────┤         ├──────────────────────────┤         ├──────────────────┤
-│ @agentlens.trace    │────────►│ POST /api/traces         │────────►│ Trace List Page  │
-│ @agentlens.span     │         │ (create + 9 UI primitives)        │ (Trace Table)    │
-│ agentlens.log()     │         │                          │         │                  │
-└─────────────────────┘         │ SSE Bus                  │         │ Trace Detail:    │
-                                │ ├─ span_created          │◄────────┤ ├─ Topology Graph │
-                                │ └─ trace_updated         │         │ ├─ Span Panel     │
-                                │                          │         │ └─ Cost Chart    │
-                                │ SQLite (WAL)             │         │                  │
-                                │ ├─ Trace (idx)           │         │ Trace Compare:   │
-                                │ └─ Span (idx)            │         │ ├─ Left Graph    │
-                                │                          │         │ ├─ Right Graph   │
-                                │ POST /api/traces/{id}/spans│        │ └─ Diff Panel    │
-                                └──────────────────────────┘         └──────────────────┘
-                                         ▲
-                                         │
-                                    Batch Transport
-                                    (httpx + queue)
+│ agentlens.trace()   │────────►│ POST /api/traces         │────────►│ Trace List Page  │
+│ agentlens.span()    │         │ POST /api/traces/{id}/spans        │ (Trace Table)    │
+│ agentlens.log()     │         │ POST /api/otel/v1/traces │         │                  │
+└─────────────────────┘         │                          │         │ Trace Detail:    │
+                                │ SSE Bus                  │         │ ├─ Topology Graph │
+┌─────────────────────┐         │ ├─ span_created          │◄────────┤ ├─ Span Panel     │
+│  OTel-instrumented  │         │ └─ trace_updated         │         │ └─ Cost Chart    │
+│  system (any lang)  │────────►│                          │         │                  │
+│  OTLP HTTP JSON     │         │ SQLite (WAL)             │         │ Trace Compare:   │
+└─────────────────────┘         │ ├─ Trace (idx)           │         │ ├─ Left Graph    │
+                                │ └─ Span (idx)            │         │ ├─ Right Graph   │
+                                └──────────────────────────┘         │ └─ Diff Panel    │
+                                         ▲                           │                  │
+                                         │                           │ Trace Replay:    │
+                                    Batch Transport                  │ ├─ Timeline bar  │
+                                    Python: httpx + queue            │ └─ Transport ctrl│
+                                    TypeScript: fetch + queue        └──────────────────┘
 ```
 
 ## Component Breakdown
@@ -89,6 +96,7 @@
 | `/api/traces/{id}` | GET | Fetch single trace with all spans |
 | `/api/traces/compare` | GET | Compute diff for two traces |
 | `/api/agents` | GET | Distinct agent names for filter dropdown |
+| `/api/otel/v1/traces` | POST | OTLP HTTP JSON ingestion (OTel-instrumented systems) |
 
 **Middleware**
 - GZipMiddleware (compress JSON >1KB)
@@ -180,17 +188,57 @@ class Span:
 - `llamaindex.py` — AgentLensCallbackHandler
 - `google_adk.py` — patch_google_adk()
 
+### TypeScript SDK (`sdk-ts/src/`)
+
+**Runtime requirements:** Node 18+ (AsyncLocalStorage, native fetch). Zero production dependencies. Dual ESM + CJS output via tsup.
+
+**Public API** (`index.ts` — singleton exports)
+
+| Function | Description |
+|----------|-------------|
+| `configure(config: TracerConfig)` | Set `serverUrl`, batch options |
+| `trace(agentName, fn, opts?)` | Run `fn` inside a named trace context |
+| `span(name, spanType?)` | Create child span; call `.enter()` / `.exit()` |
+| `log(message, extra?)` | Add timestamped log to the active span |
+| `addExporter(exporter)` | Register a custom `SpanExporter` |
+| `currentTrace()` | Return the active `ActiveTrace`, if any |
+
+**Tracer** (`tracer.ts`)
+- `Tracer` class with `AsyncLocalStorage` for context propagation
+- `ActiveTrace` — holds root span + child spans
+- `SpanContext` — `.enter()`, `.exit()`, `.setOutput()`, `.setCost()`
+
+**Transport** (`transport.ts`)
+- `postTrace()` — POST all spans to `/api/traces`
+- `postSpans()` — POST incremental spans to `/api/traces/{id}/spans`
+- `flushBatch()` — Flush pending spans queue
+
+**Cost** (`cost.ts`)
+- `calculateCost(model, inputTokens, outputTokens) -> number`
+- Mirrors Python SDK pricing table
+
+**Types** (`types.ts`)
+- `TracerConfig`, `SpanData`, `TracePayload`, `SpansPayload`, `LogEntry`, `CostData`, `SpanExporter`, `ISpanContext`
+
+**Testing** — 30 tests with vitest
+
 ### Testing
 
-**Server Tests** (`server/tests/`, 38 tests)
+**Server Tests** (`server/tests/`, 46 tests)
 - `test_api_endpoints.py` — POST /traces, POST /spans, GET /traces, GET /compare
+- `test_otel_ingestion.py` — POST /api/otel/v1/traces, otel_mapper unit tests (8 tests)
 - `test_sse.py` — Event bus, subscriptions
 - `test_storage.py` — CRUD, filtering, sorting
 
-**SDK Tests** (`sdk/tests/`, 52 tests)
+**Python SDK Tests** (`sdk/tests/`)
 - `test_tracer.py` — Decorator, context manager, span hierarchy
 - `test_transport.py` — Batch queue, flush, retries
 - `test_cost.py` — Pricing calculations
+
+**TypeScript SDK Tests** (`sdk-ts/tests/`, 30 tests, vitest)
+- Tracer context propagation, span lifecycle
+- Transport batch queue and flush
+- Cost calculation accuracy
 
 Coverage: >82% (pytest + coverage.py)
 
@@ -275,3 +323,4 @@ CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "3000"]
 3. **Message Queue** — Redis/RabbitMQ for high-volume ingestion
 4. **Caching** — Redis cache for frequent trace queries
 5. **Multi-Tenant** — Auth, tenant isolation, quota enforcement
+6. **TypeScript SDK Framework Integrations** — LangChain.js, LlamaIndex.js, Vercel AI SDK

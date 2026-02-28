@@ -1,6 +1,6 @@
-# AgentLens v0.2.0 — Product Overview & PDR
+# AgentLens v0.4.0 — Product Overview & PDR
 
-**Version:** 0.2.0 | **Release Date:** Feb 2025 | **Status:** Production
+**Version:** 0.4.0 | **Release Date:** Feb 2026 | **Status:** Production
 
 ## Executive Summary
 
@@ -16,8 +16,9 @@ AgentLens is a self-hosted, open-source AI agent observability platform. Unlike 
 
 ## Distribution
 
-- **PyPI:** `pip install agentlens-observe==0.2.0`
-- **Docker:** `docker run -p 3000:3000 tranhoangtu/agentlens:0.2.0`
+- **PyPI (Python SDK):** `pip install agentlens-observe==0.3.0`
+- **npm (TypeScript SDK):** `npm install agentlens-observe@0.1.0`
+- **Docker:** `docker run -p 3000:3000 tranhoangtu/agentlens:0.4.0`
 - **GitHub:** `github.com/tranhoangtu-it/agentlens`
 - **License:** MIT
 
@@ -55,15 +56,18 @@ AgentLens is a self-hosted, open-source AI agent observability platform. Unlike 
 - [x] Trace-level cost aggregation
 
 ### F6: SDK & Integrations
-- [x] Python SDK v0.2.0 (3.10+)
+- [x] Python SDK v0.3.0 (3.10+)
+- [x] TypeScript SDK v0.1.0 (Node 18+, zero prod dependencies)
 - [x] Batch transport with configurable queue + auto-flush
 - [x] OpenTelemetry span exporter bridge
 - [x] Framework integrations: LangChain, CrewAI, AutoGen, LlamaIndex, Google ADK
-- [x] Custom logging via `agentlens.log()`
+- [x] Custom logging via `agentlens.log()` / `agentlens.log()`
+- [x] ESM + CJS dual output (TypeScript SDK)
 
 ### F7: Testing & Quality
-- [x] 38 server tests (pytest, httpx, respx)
-- [x] 52 SDK tests
+- [x] 46 server tests (pytest, httpx, respx)
+- [x] Python SDK tests
+- [x] 30 TypeScript SDK tests (vitest)
 - [x] >82% code coverage
 
 ## Non-Functional Requirements
@@ -113,11 +117,12 @@ Your Agent (Python)          AgentLens Server          Browser Dashboard
 |-------|-----------|
 | Dashboard | React 19, Vite 7, React Flow 12, Tailwind 3, Recharts 3, Radix UI, @tanstack/react-virtual |
 | Server | Python 3.11+, FastAPI, SQLite (WAL), SQLModel, SSE |
-| SDK | Python 3.10+, httpx, OTel bridge, 27 model pricing |
-| Testing | pytest, httpx, respx |
-| Deployment | Docker (multi-stage), PyPI |
+| Python SDK | Python 3.10+, httpx, OTel bridge, 27 model pricing |
+| TypeScript SDK | Node 18+, AsyncLocalStorage, native fetch, zero prod deps, tsup (ESM+CJS) |
+| Testing | pytest, httpx, respx (server/Python SDK); vitest (TypeScript SDK) |
+| Deployment | Docker (multi-stage), PyPI, npm |
 
-## Key Features (v0.2.0)
+## Key Features (v0.4.0)
 
 1. **Live trace streaming** — Watch agent think in real-time
 2. **Agent topology graph** — Interactive DAG of tool calls, handoffs
@@ -125,10 +130,11 @@ Your Agent (Python)          AgentLens Server          Browser Dashboard
 4. **Search & filters** — Full-text + status/agent/date/cost filters
 5. **Cost tracking** — 27 LLM models priced
 6. **Framework integrations** — Auto-instrument LangChain, CrewAI, AutoGen, LlamaIndex, Google ADK
-7. **OpenTelemetry export** — Bridge to Datadog, Jaeger, etc.
-8. **Batch transport** — High-throughput agent support
-9. **Self-hosted** — Your data, your machine
-10. **90+ tests** — >82% coverage
+7. **OpenTelemetry ingestion & export** — Receive OTLP HTTP traces; bridge to Datadog, Jaeger, etc.
+8. **Batch transport** — High-throughput agent support (Python + TypeScript)
+9. **Time-travel replay** — Step through agent execution client-side
+10. **TypeScript SDK** — Node 18+, zero prod deps, ESM+CJS, `configure/trace/span/log/addExporter/currentTrace`
+11. **Self-hosted** — Your data, your machine
 
 ## Success Metrics
 
@@ -139,20 +145,21 @@ Your Agent (Python)          AgentLens Server          Browser Dashboard
 
 ## Roadmap (Future)
 
-- [ ] Replay/time-travel debugging
-- [ ] OTel span ingestion (receive spans from other systems)
+- [x] Replay/time-travel debugging
+- [x] OTel span ingestion (receive spans from other systems)
+- [x] TypeScript SDK (v0.1.0 on npm)
 - [ ] PostgreSQL backend
-- [ ] TypeScript SDK
 - [ ] Alerting on behavior anomalies
 - [ ] Multi-tenant auth
 
 ## Constraints & Dependencies
 
-- Python 3.10+ (SDK), 3.11+ (Server)
-- Node 18+ (Dashboard)
+- Python 3.10+ (Python SDK), 3.11+ (Server)
+- Node 18+ (Dashboard, TypeScript SDK)
 - FastAPI 0.100+
 - React 19
 - SQLite (current), PostgreSQL (future)
+- TypeScript SDK: zero prod dependencies (AsyncLocalStorage, native fetch)
 
 ## Success Criteria
 

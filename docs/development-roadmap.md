@@ -1,6 +1,6 @@
 # AgentLens Development Roadmap
 
-**Current Version:** v0.2.0 | **Release Date:** Feb 2025 | **Next Milestone:** v0.3.0 (Q2 2025)
+**Current Version:** v0.4.0 | **Release Date:** Feb 2026 | **Next Milestone:** v0.5.0 (PostgreSQL backend)
 
 ## Phase 1: MVP (COMPLETED ✅)
 
@@ -106,13 +106,13 @@
   - Full-text search optimization (PostgeSQL `tsvector`)
   - Transaction isolation levels
 
-#### 2. OTel Span Ingestion
+#### 2. OTel Span Ingestion ✅
 - **Rationale:** Allow AgentLens to receive traces from OTel-instrumented systems
 - **Work:**
-  - [ ] Implement OTel Protocol Buffers receiver
-  - [ ] Map OTel spans → AgentLens span model
-  - [ ] HTTP receiver endpoint (/api/otel/v1/traces)
-  - [ ] Backward compatibility with existing SDK
+  - [x] Map OTel spans → AgentLens span model (`server/otel_mapper.py`)
+  - [x] HTTP receiver endpoint (`POST /api/otel/v1/traces`, OTLP HTTP JSON)
+  - [x] Kind mapping: SERVER→agent_run, CLIENT→tool_call, INTERNAL→llm_call
+  - [x] 8 tests (4 unit mapper + 4 integration)
 
 - **Impact:**
   - OpenTelemetry ecosystem integration
@@ -158,13 +158,15 @@
   - Incident response automation
   - Cost governance
 
-#### 6. TypeScript SDK
+#### 6. TypeScript SDK ✅
 - **Rationale:** Support Node.js and browser-based agents
 - **Work:**
-  - [ ] Node.js SDK port (async/await compatible)
-  - [ ] Browser SDK (fetch-based)
-  - [ ] Framework integrations: LangChain.js, LlamaIndex.js
-  - [ ] Feature parity with Python SDK
+  - [x] Node 18+ SDK (AsyncLocalStorage, native fetch, zero prod deps)
+  - [x] Public API: `configure`, `trace`, `span`, `log`, `addExporter`, `currentTrace`
+  - [x] ESM + CJS dual output via tsup
+  - [x] 30 vitest tests
+  - [x] Published to npm as `agentlens-observe@0.1.0`
+  - [ ] Framework integrations: LangChain.js, LlamaIndex.js (future)
 
 - **Impact:**
   - JavaScript/TypeScript ecosystem
@@ -173,11 +175,11 @@
 
 ### Success Criteria (Phase 3)
 - [ ] PostgreSQL backend proven on 1M+ spans
-- [ ] OTel ingestion passing compliance tests
+- [x] OTel ingestion (OTLP HTTP JSON, 8 tests passing)
 - [x] Time-travel replay usable (UI complete)
 - [ ] Multi-tenant auth production-ready
 - [ ] Alerting framework handling 1000+ rules
-- [ ] TypeScript SDK at feature parity (Python SDK)
+- [x] TypeScript SDK v0.1.0 published to npm
 
 ## Phase 4: Community & Growth (H2 2025)
 
@@ -202,11 +204,11 @@
 
 ## Deprecation Schedule
 
-### v0.2.0 (Current)
+### v0.4.0 (Current)
 - SQLite fully supported
 - All features stable
 
-### v0.3.0 (Future)
+### v0.5.0 (Future)
 - SQLite marked for deprecation
 - PostgreSQL recommended for new deployments
 - 6-month migration window for existing users

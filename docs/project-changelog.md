@@ -2,6 +2,81 @@
 
 All notable changes documented. Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.4.0] — 2026-02-28
+
+**Version:** 0.4.0 | **Status:** Production | **Release Type:** Major Feature Release
+
+### Added
+
+#### TypeScript SDK (npm: `agentlens-observe@0.1.0`)
+- **Package:** `agentlens-observe` v0.1.0 published to npm
+- **Runtime:** Node 18+ (AsyncLocalStorage, native fetch), zero production dependencies
+- **Public API:** `configure()`, `trace()`, `span()`, `log()`, `addExporter()`, `currentTrace()`
+- **Tracer:** `Tracer` class with `AsyncLocalStorage` context propagation; `ActiveTrace` and `SpanContext` helpers
+- **Transport:** `postTrace()`, `postSpans()`, `flushBatch()` using native fetch
+- **Cost:** `calculateCost(model, inputTokens, outputTokens)` — mirrors Python SDK pricing
+- **Types:** `TracerConfig`, `SpanData`, `TracePayload`, `SpansPayload`, `LogEntry`, `CostData`, `SpanExporter`, `ISpanContext`
+- **Build:** ESM + CJS dual output via tsup; TypeScript declarations included
+- **Tests:** 30 vitest tests
+
+#### Docker
+- **Image:** `tranhoangtu/agentlens:0.4.0` (also tagged `latest`)
+
+### Upgrade Instructions
+
+**From v0.3.0 to v0.4.0:**
+
+1. **Docker Image Update**
+   ```bash
+   docker pull tranhoangtu/agentlens:0.4.0
+   docker run -p 3000:3000 tranhoangtu/agentlens:0.4.0
+   ```
+
+2. **Python SDK** — no change needed (already at v0.3.0)
+
+3. **TypeScript SDK (new)**
+   ```bash
+   npm install agentlens-observe@0.1.0
+   ```
+   ```ts
+   import * as agentlens from "agentlens-observe";
+   agentlens.configure({ serverUrl: "http://localhost:3000" });
+   const result = await agentlens.trace("MyAgent", async () => {
+     const s = agentlens.span("llm_call", "llm_call").enter();
+     s.setOutput("done");
+     s.exit();
+     return "done";
+   });
+   ```
+
+4. **API Compatibility** — All v0.3.0 endpoints unchanged
+
+---
+
+## [0.3.0] — 2026-02-28
+
+**Version:** 0.3.0 | **Status:** Maintained | **Release Type:** Major Feature Release
+
+### Added
+
+#### Replay / Time-Travel Debugging
+- **Route:** `#/traces/:id/replay` — client-side only, zero backend changes
+- **Hook:** `use-replay-controls.ts` — cursor, play/pause, speed 1–10x, step prev/next
+- **Components:** `replay-transport-controls.tsx`, `replay-timeline-scrubber.tsx` (Gantt bars + range slider)
+- **Page:** `trace-replay-page.tsx`; "Enter Replay" button added to trace detail page
+
+#### OTel OTLP HTTP Ingestion
+- **Endpoint:** `POST /api/otel/v1/traces` — accepts OTLP HTTP JSON (no protobuf/gRPC)
+- **Mapper:** `server/otel_mapper.py` — pure function mapping OTel spans → AgentLens format
+- **Kind mapping:** SERVER→agent_run, CLIENT→tool_call, INTERNAL→llm_call, default→task
+- **agent_name** from `resource.attributes["service.name"]`, fallback `"otel"`
+- **Tests:** 8 tests (4 unit mapper + 4 integration endpoint)
+
+#### Server Tests
+- Total server tests: 46 (up from 38)
+
+---
+
 ## [0.2.0] — 2025-02-28
 
 **Version:** 0.2.0 | **Status:** Production | **Release Type:** Major Feature Release
@@ -246,7 +321,9 @@ All notable changes documented. Format follows [Keep a Changelog](https://keepac
 
 | Version | Status | Support Until |
 |---------|--------|---------------|
-| 0.2.0 | Current | 0.3.0 release |
+| 0.4.0 | Current | 0.5.0 release |
+| 0.3.0 | Maintained | 6 months |
+| 0.2.0 | EOL | 2026-02-28 |
 | 0.1.0 | EOL | 2025-02-28 |
 
 ### Deprecation Policy
@@ -294,7 +371,7 @@ All changes follow this format:
 - **Minor releases:** Quarterly (new features)
 - **Major releases:** Annually (strategic changes)
 
-**Next Planned Release:** v0.3.0 (Q2 2025)
+**Next Planned Release:** v0.5.0
 - PostgreSQL backend
-- OTel span ingestion
-- Time-travel debugging
+- Alerting framework
+- TypeScript SDK framework integrations (LangChain.js, LlamaIndex.js)
