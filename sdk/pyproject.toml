@@ -30,6 +30,7 @@ autogen = ["autogen-agentchat>=0.4"]
 llamaindex = ["llama-index-core>=0.11"]
 google-adk = ["google-adk>=0.3"]
 otel = ["opentelemetry-api>=1.20", "opentelemetry-sdk>=1.20"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "respx>=0.21"]
 all = ["agentlens-observe[langchain,crewai,autogen,llamaindex,google-adk,otel]"]
 
 [tool.hatch.build.targets.wheel]

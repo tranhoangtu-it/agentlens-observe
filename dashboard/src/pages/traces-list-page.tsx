@@ -1,4 +1,5 @@
 // Traces list page — search, filters, sortable table, pagination, SSE refresh
+// Supports compare mode: activate with "Compare" button, select 2 traces, click "Compare Selected"
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { fetchTraces, fetchAgents, type Trace } from '../lib/api-client'
@@ -12,14 +13,17 @@ import { Skeleton } from '../components/ui/skeleton'
 
 interface Props {
   onSelect: (id: string) => void
+  onCompare?: (leftId: string, rightId: string) => void
 }
 
-export function TracesListPage({ onSelect }: Props) {
+export function TracesListPage({ onSelect, onCompare }: Props) {
   const [traces, setTraces] = useState<Trace[]>([])
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [agents, setAgents] = useState<string[]>([])
+  const [compareMode, setCompareMode] = useState(false)
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   const { filters, setFilter, resetFilters, apiParams } = useTraceFilters()
   const { latestEvent, isConnected } = useSSETraces()
@@ -69,25 +73,77 @@ export function TracesListPage({ onSelect }: Props) {
     }
   }
 
+  function toggleCompareMode() {
+    setCompareMode((prev) => !prev)
+    setSelectedIds([])
+  }
+
+  function handleToggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= 2) return prev
+      return [...prev, id]
+    })
+  }
+
+  function handleCompareSelected() {
+    if (selectedIds.length === 2 && onCompare) {
+      onCompare(selectedIds[0], selectedIds[1])
+    }
+  }
+
   return (
     <div className="p-6 space-y-4 overflow-y-auto h-full">
       {/* Header row */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Traces</h2>
           <p className="text-muted-foreground text-xs mt-0.5">
             {loading ? 'Loading…' : `${total.toLocaleString()} trace${total !== 1 ? 's' : ''}`}
           </p>
         </div>
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <span
-            className={`inline-block w-2 h-2 rounded-full ${
-              isConnected ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/40'
-            }`}
-          />
-          <span className={isConnected ? 'text-green-400' : ''}>
-            {isConnected ? 'Live' : 'Disconnected'}
-          </span>
+        <div className="flex items-center gap-2">
+          {/* Compare mode controls */}
+          {onCompare && (
+            compareMode ? (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-muted-foreground">
+                  {selectedIds.length}/2 selected
+                </span>
+                {selectedIds.length === 2 && (
+                  <button
+                    onClick={handleCompareSelected}
+                    className="text-xs px-2.5 py-1 rounded bg-primary text-primary-foreground hover:bg-primary/90 transition-colors font-medium"
+                  >
+                    Compare Selected
+                  </button>
+                )}
+                <button
+                  onClick={toggleCompareMode}
+                  className="text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={toggleCompareMode}
+                className="text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Compare
+              </button>
+            )
+          )}
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${
+                isConnected ? 'bg-green-500 animate-pulse' : 'bg-muted-foreground/40'
+              }`}
+            />
+            <span className={isConnected ? 'text-green-400' : ''}>
+              {isConnected ? 'Live' : 'Disconnected'}
+            </span>
+          </div>
         </div>
       </div>
 
@@ -143,6 +199,9 @@ export function TracesListPage({ onSelect }: Props) {
           sort={filters.sort}
           order={filters.order}
           onSort={handleSort}
+          compareMode={compareMode}
+          selectedIds={selectedIds}
+          onToggleSelect={handleToggleSelect}
         />
       )}
 

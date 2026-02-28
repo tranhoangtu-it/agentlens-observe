@@ -176,6 +176,22 @@ def get_trace(trace_id: str) -> Optional[dict]:
         return {"trace": trace, "spans": spans}
 
 
+def get_trace_pair(left_id: str, right_id: str) -> Optional[dict]:
+    """Fetch two traces + their spans for comparison. Returns None if either trace missing."""
+    engine = _get_engine()
+    with Session(engine) as session:
+        left_trace = session.get(Trace, left_id)
+        right_trace = session.get(Trace, right_id)
+        if not left_trace or not right_trace:
+            return None
+        left_spans = list(session.exec(select(Span).where(Span.trace_id == left_id)).all())
+        right_spans = list(session.exec(select(Span).where(Span.trace_id == right_id)).all())
+        return {
+            "left": {"trace": left_trace, "spans": left_spans},
+            "right": {"trace": right_trace, "spans": right_spans},
+        }
+
+
 def add_spans_to_trace(trace_id: str, spans_data: list[dict]) -> Optional[dict]:
     """Append spans to existing trace, recompute aggregates. Returns {trace, new_spans} or None."""
     engine = _get_engine()

@@ -1,4 +1,5 @@
 // Trace list table — sortable headers, status badges, click to navigate to detail
+// Supports optional compare-mode with checkboxes (max 2 selections)
 // Uses ui/table and ui/badge primitives
 
 import type { Trace } from '../lib/api-client'
@@ -13,6 +14,9 @@ interface Props {
   sort?: string
   order?: string
   onSort?: (col: string) => void
+  compareMode?: boolean
+  selectedIds?: string[]
+  onToggleSelect?: (id: string) => void
 }
 
 // Map status string to Badge variant
@@ -82,7 +86,16 @@ function SortIcon({ active, order }: { active: boolean; order: string }) {
   )
 }
 
-export function TraceListTable({ traces, onSelect, sort = 'created_at', order = 'desc', onSort }: Props) {
+export function TraceListTable({
+  traces,
+  onSelect,
+  sort = 'created_at',
+  order = 'desc',
+  onSort,
+  compareMode = false,
+  selectedIds = [],
+  onToggleSelect,
+}: Props) {
   if (traces.length === 0) {
     return (
       <div className="text-center py-16 text-muted-foreground text-sm">
@@ -96,10 +109,19 @@ export function TraceListTable({ traces, onSelect, sort = 'created_at', order = 
     onSort(col.sortKey)
   }
 
+  function handleRowClick(t: Trace) {
+    if (compareMode && onToggleSelect) {
+      onToggleSelect(t.id)
+    } else {
+      onSelect(t.id)
+    }
+  }
+
   return (
     <Table>
       <TableHeader>
         <TableRow className="hover:bg-transparent">
+          {compareMode && <TableHead className="w-8" />}
           {COLUMNS.map((col) => (
             <TableHead
               key={col.label}
@@ -115,20 +137,35 @@ export function TraceListTable({ traces, onSelect, sort = 'created_at', order = 
         </TableRow>
       </TableHeader>
       <TableBody>
-        {traces.map((t) => (
-          <TableRow
-            key={t.id}
-            onClick={() => onSelect(t.id)}
-            className="cursor-pointer"
-          >
-            <TableCell className="font-mono text-primary text-xs">{t.agent_name}</TableCell>
-            <TableCell><StatusBadge status={t.status} /></TableCell>
-            <TableCell className="text-foreground/80">{t.span_count}</TableCell>
-            <TableCell className="text-foreground/80">{formatCost(t.total_cost_usd)}</TableCell>
-            <TableCell className="text-foreground/80">{formatDuration(t.duration_ms)}</TableCell>
-            <TableCell className="text-muted-foreground text-xs">{formatDate(t.created_at)}</TableCell>
-          </TableRow>
-        ))}
+        {traces.map((t) => {
+          const isChecked = selectedIds.includes(t.id)
+          const isDisabled = compareMode && selectedIds.length >= 2 && !isChecked
+          return (
+            <TableRow
+              key={t.id}
+              onClick={() => handleRowClick(t)}
+              className={`cursor-pointer ${isDisabled ? 'opacity-40' : ''}`}
+            >
+              {compareMode && (
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    disabled={isDisabled}
+                    onChange={() => onToggleSelect?.(t.id)}
+                    className="accent-primary w-3.5 h-3.5 cursor-pointer"
+                  />
+                </TableCell>
+              )}
+              <TableCell className="font-mono text-primary text-xs">{t.agent_name}</TableCell>
+              <TableCell><StatusBadge status={t.status} /></TableCell>
+              <TableCell className="text-foreground/80">{t.span_count}</TableCell>
+              <TableCell className="text-foreground/80">{formatCost(t.total_cost_usd)}</TableCell>
+              <TableCell className="text-foreground/80">{formatDuration(t.duration_ms)}</TableCell>
+              <TableCell className="text-muted-foreground text-xs">{formatDate(t.created_at)}</TableCell>
+            </TableRow>
+          )
+        })}
       </TableBody>
     </Table>
   )

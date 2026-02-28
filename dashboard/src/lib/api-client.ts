@@ -85,3 +85,37 @@ export async function fetchTrace(id: string): Promise<TraceDetailResponse> {
   if (!res.ok) throw new Error(`fetchTrace failed: ${res.status}`)
   return res.json() as Promise<TraceDetailResponse>
 }
+
+// ── Trace comparison ──────────────────────────────────────────────────────────
+
+export interface SpanMatchEntry {
+  left_span_id: string
+  right_span_id: string
+  status: 'identical' | 'changed'
+  duration_delta_ms: number | null
+  cost_delta_usd: number | null
+  input_tokens_delta: number | null
+  output_tokens_delta: number | null
+}
+
+export interface TraceDiff {
+  matched: SpanMatchEntry[]
+  left_only: string[]
+  right_only: string[]
+}
+
+export interface TraceCompareResponse {
+  left: TraceDetailResponse
+  right: TraceDetailResponse
+  diff: TraceDiff
+}
+
+export async function fetchTraceComparison(
+  leftId: string,
+  rightId: string,
+): Promise<TraceCompareResponse> {
+  const params = new URLSearchParams({ left: leftId, right: rightId })
+  const res = await fetch(`${BASE}/traces/compare?${params}`)
+  if (!res.ok) throw new Error(`fetchTraceComparison failed: ${res.status}`)
+  return res.json() as Promise<TraceCompareResponse>
+}

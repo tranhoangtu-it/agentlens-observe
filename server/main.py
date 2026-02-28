@@ -11,7 +11,8 @@ from fastapi.staticfiles import StaticFiles
 
 from models import SpanIn, SpansIn, TraceIn
 from sse import bus
-from storage import add_spans_to_trace, create_trace, get_trace, init_db, list_agents, list_traces
+from storage import add_spans_to_trace, create_trace, get_trace, get_trace_pair, init_db, list_agents, list_traces
+from diff import compute_diff
 
 
 @asynccontextmanager
@@ -134,6 +135,46 @@ def list_traces_endpoint(
 def list_agents_endpoint():
     """Return distinct agent names for filter dropdowns."""
     return {"agents": list_agents()}
+
+
+# ── Trace comparison — MUST be registered before /{trace_id} ─────────────────
+
+
+@app.get("/api/traces/compare")
+def compare_traces_endpoint(
+    left: str = Query(..., description="Left trace ID"),
+    right: str = Query(..., description="Right trace ID"),
+):
+    """Return both traces + spans + structural diff metadata."""
+    pair = get_trace_pair(left, right)
+    if not pair:
+        raise HTTPException(status_code=404, detail="One or both traces not found")
+
+    # Convert SQLModel Span objects to plain dicts for the diff algorithm
+    def span_to_dict(s) -> dict:
+        return {
+            "id": s.id,
+            "parent_id": s.parent_id,
+            "name": s.name,
+            "type": s.type,
+            "start_ms": s.start_ms,
+            "end_ms": s.end_ms,
+            "input": s.input,
+            "output": s.output,
+            "cost_usd": s.cost_usd,
+            "cost_input_tokens": s.cost_input_tokens,
+            "cost_output_tokens": s.cost_output_tokens,
+        }
+
+    left_spans_dicts = [span_to_dict(s) for s in pair["left"]["spans"]]
+    right_spans_dicts = [span_to_dict(s) for s in pair["right"]["spans"]]
+    diff = compute_diff(left_spans_dicts, right_spans_dicts)
+
+    return {
+        "left": pair["left"],
+        "right": pair["right"],
+        "diff": diff,
+    }
 
 
 # ── SSE stream — MUST be registered before /{trace_id} ───────────────────────
