@@ -28,13 +28,13 @@ Phases are ordered by **star-attracting impact** and can be parallelized where n
 
 | # | Phase | Status | Effort | Parallel Group |
 |---|-------|--------|--------|----------------|
-| 1 | [Dashboard UX Overhaul](phase-01-dashboard-ux-overhaul.md) | pending | 12h | A |
-| 2 | [Search, Filters & Pagination](phase-02-search-filters-pagination.md) | pending | 6h | A |
-| 3 | [Real-Time Improvements](phase-03-realtime-improvements.md) | pending | 5h | A |
-| 4 | [Trace Comparison / Diff](phase-04-trace-comparison-diff.md) | pending | 6h | B (after P1) |
-| 5 | [SDK Improvements & Integrations](phase-05-sdk-improvements.md) | pending | 5h | B |
-| 6 | [Testing Suite](phase-06-testing-suite.md) | pending | 4h | C (after P1-P5) |
-| 7 | [Performance & Scale](phase-07-performance-and-scale.md) | pending | 2h | C |
+| 1 | [Dashboard UX Overhaul](phase-01-dashboard-ux-overhaul.md) | **completed** | 12h | A |
+| 2 | [Search, Filters & Pagination](phase-02-search-filters-pagination.md) | **completed** | 6h | A |
+| 3 | [Real-Time Improvements](phase-03-realtime-improvements.md) | **completed** | 5h | A |
+| 4 | [Trace Comparison / Diff](phase-04-trace-comparison-diff.md) | **completed** | 6h | B (after P1) |
+| 5 | [SDK Improvements & Integrations](phase-05-sdk-improvements.md) | **completed** | 5h | B |
+| 6 | [Testing Suite](phase-06-testing-suite.md) | **completed** | 4h | C (after P1-P5) |
+| 7 | [Performance & Scale](phase-07-performance-and-scale.md) | **completed** | 2h | C |
 
 ## Parallel Execution Map
 

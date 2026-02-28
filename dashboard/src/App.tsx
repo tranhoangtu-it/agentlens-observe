@@ -109,7 +109,7 @@ export default function App() {
 
         {/* Footer */}
         <div className="px-4 py-3 border-t border-sidebar-border">
-          <p className="text-xs text-muted-foreground/60">v0.1</p>
+          <p className="text-xs text-muted-foreground/60">v0.2</p>
         </div>
       </aside>
 
