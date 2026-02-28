@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agentlens-observe"
-version = "0.1.0"
+version = "0.2.0"
 description = "Debug AI agents visually — self-hosted, open-source observability SDK"
 readme = "README.md"
 requires-python = ">=3.10"
