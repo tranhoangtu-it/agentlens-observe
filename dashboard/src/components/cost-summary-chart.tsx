@@ -1,6 +1,7 @@
 // Cost summary bar chart — cost per span grouped by model using Recharts
 // Improved: card-style tooltip, gradient fills, total cost summary
 
+import { memo } from 'react'
 import {
   BarChart,
   Bar,
@@ -71,7 +72,7 @@ function CustomTooltip({ active, payload, label }: {
   )
 }
 
-export function CostSummaryChart({ spans }: Props) {
+export const CostSummaryChart = memo(function CostSummaryChart({ spans }: Props) {
   const data = aggregateByModel(spans)
 
   if (data.length === 0) {
@@ -120,4 +121,4 @@ export function CostSummaryChart({ spans }: Props) {
       </ResponsiveContainer>
     </div>
   )
-}
+})

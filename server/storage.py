@@ -227,9 +227,11 @@ def add_spans_to_trace(trace_id: str, spans_data: list[dict]) -> Optional[dict]:
                 session.add(span)
                 new_spans.append(span)
 
-        # Recompute aggregates from all spans in trace
-        all_spans = session.exec(select(Span).where(Span.trace_id == trace_id)).all()
-        all_spans = list(all_spans) + new_spans
+        # Flush new spans so the subsequent query includes them
+        session.flush()
+
+        # Recompute aggregates from all spans in trace (single source of truth)
+        all_spans = list(session.exec(select(Span).where(Span.trace_id == trace_id)).all())
 
         total_cost = sum(sp.cost_usd or 0.0 for sp in all_spans) or None
         total_tokens = sum(

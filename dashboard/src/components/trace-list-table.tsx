@@ -1,7 +1,9 @@
 // Trace list table — sortable headers, status badges, click to navigate to detail
 // Supports optional compare-mode with checkboxes (max 2 selections)
-// Uses ui/table and ui/badge primitives
+// Uses ui/table and ui/badge primitives with @tanstack/react-virtual for perf
 
+import { useRef, memo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import type { Trace } from '../lib/api-client'
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell,
@@ -86,6 +88,51 @@ function SortIcon({ active, order }: { active: boolean; order: string }) {
   )
 }
 
+const ROW_HEIGHT = 41 // px — matches table row with py-2 + text-sm
+const VIRTUALIZE_THRESHOLD = 100 // only virtualize when row count is high
+
+// Memoized row to prevent unnecessary re-renders during scroll
+const TraceRow = memo(function TraceRow({
+  trace: t,
+  compareMode,
+  isChecked,
+  isDisabled,
+  onRowClick,
+  onToggleSelect,
+}: {
+  trace: Trace
+  compareMode: boolean
+  isChecked: boolean
+  isDisabled: boolean
+  onRowClick: (t: Trace) => void
+  onToggleSelect?: (id: string) => void
+}) {
+  return (
+    <TableRow
+      onClick={() => onRowClick(t)}
+      className={`cursor-pointer ${isDisabled ? 'opacity-40' : ''}`}
+    >
+      {compareMode && (
+        <TableCell onClick={(e) => e.stopPropagation()}>
+          <input
+            type="checkbox"
+            checked={isChecked}
+            disabled={isDisabled}
+            onChange={() => onToggleSelect?.(t.id)}
+            className="accent-primary w-3.5 h-3.5 cursor-pointer"
+          />
+        </TableCell>
+      )}
+      <TableCell className="font-mono text-primary text-xs">{t.agent_name}</TableCell>
+      <TableCell><StatusBadge status={t.status} /></TableCell>
+      <TableCell className="text-foreground/80">{t.span_count}</TableCell>
+      <TableCell className="text-foreground/80">{formatCost(t.total_cost_usd)}</TableCell>
+      <TableCell className="text-foreground/80">{formatDuration(t.duration_ms)}</TableCell>
+      <TableCell className="text-muted-foreground text-xs">{formatDate(t.created_at)}</TableCell>
+    </TableRow>
+  )
+})
+
 export function TraceListTable({
   traces,
   onSelect,
@@ -96,6 +143,17 @@ export function TraceListTable({
   selectedIds = [],
   onToggleSelect,
 }: Props) {
+  const parentRef = useRef<HTMLDivElement>(null)
+  const useVirtual = traces.length > VIRTUALIZE_THRESHOLD
+
+  const virtualizer = useVirtualizer({
+    count: traces.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 20,
+    enabled: useVirtual,
+  })
+
   if (traces.length === 0) {
     return (
       <div className="text-center py-16 text-muted-foreground text-sm">
@@ -117,56 +175,85 @@ export function TraceListTable({
     }
   }
 
+  const header = (
+    <TableHeader>
+      <TableRow className="hover:bg-transparent">
+        {compareMode && <TableHead className="w-8" />}
+        {COLUMNS.map((col) => (
+          <TableHead
+            key={col.label}
+            className={col.sortKey && onSort ? 'cursor-pointer select-none hover:text-foreground transition-colors' : ''}
+            onClick={() => handleSort(col)}
+          >
+            {col.label}
+            {col.sortKey && onSort && (
+              <SortIcon active={sort === col.sortKey} order={order} />
+            )}
+          </TableHead>
+        ))}
+      </TableRow>
+    </TableHeader>
+  )
+
+  // For small datasets: render directly (no virtualization overhead)
+  if (!useVirtual) {
+    return (
+      <Table>
+        {header}
+        <TableBody>
+          {traces.map((t) => {
+            const isChecked = selectedIds.includes(t.id)
+            const isDisabled = compareMode && selectedIds.length >= 2 && !isChecked
+            return (
+              <TraceRow
+                key={t.id}
+                trace={t}
+                compareMode={compareMode}
+                isChecked={isChecked}
+                isDisabled={isDisabled}
+                onRowClick={handleRowClick}
+                onToggleSelect={onToggleSelect}
+              />
+            )
+          })}
+        </TableBody>
+      </Table>
+    )
+  }
+
+  // Virtualized table for large datasets
+  const virtualItems = virtualizer.getVirtualItems()
   return (
-    <Table>
-      <TableHeader>
-        <TableRow className="hover:bg-transparent">
-          {compareMode && <TableHead className="w-8" />}
-          {COLUMNS.map((col) => (
-            <TableHead
-              key={col.label}
-              className={col.sortKey && onSort ? 'cursor-pointer select-none hover:text-foreground transition-colors' : ''}
-              onClick={() => handleSort(col)}
-            >
-              {col.label}
-              {col.sortKey && onSort && (
-                <SortIcon active={sort === col.sortKey} order={order} />
-              )}
-            </TableHead>
-          ))}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {traces.map((t) => {
-          const isChecked = selectedIds.includes(t.id)
-          const isDisabled = compareMode && selectedIds.length >= 2 && !isChecked
-          return (
-            <TableRow
-              key={t.id}
-              onClick={() => handleRowClick(t)}
-              className={`cursor-pointer ${isDisabled ? 'opacity-40' : ''}`}
-            >
-              {compareMode && (
-                <TableCell onClick={(e) => e.stopPropagation()}>
-                  <input
-                    type="checkbox"
-                    checked={isChecked}
-                    disabled={isDisabled}
-                    onChange={() => onToggleSelect?.(t.id)}
-                    className="accent-primary w-3.5 h-3.5 cursor-pointer"
-                  />
-                </TableCell>
-              )}
-              <TableCell className="font-mono text-primary text-xs">{t.agent_name}</TableCell>
-              <TableCell><StatusBadge status={t.status} /></TableCell>
-              <TableCell className="text-foreground/80">{t.span_count}</TableCell>
-              <TableCell className="text-foreground/80">{formatCost(t.total_cost_usd)}</TableCell>
-              <TableCell className="text-foreground/80">{formatDuration(t.duration_ms)}</TableCell>
-              <TableCell className="text-muted-foreground text-xs">{formatDate(t.created_at)}</TableCell>
-            </TableRow>
-          )
-        })}
-      </TableBody>
-    </Table>
+    <div ref={parentRef} className="overflow-auto flex-1">
+      <Table>
+        {header}
+        <TableBody>
+          {/* Spacer row before visible items */}
+          {virtualItems.length > 0 && virtualItems[0].start > 0 && (
+            <tr style={{ height: virtualItems[0].start }} />
+          )}
+          {virtualItems.map((vRow) => {
+            const t = traces[vRow.index]
+            const isChecked = selectedIds.includes(t.id)
+            const isDisabled = compareMode && selectedIds.length >= 2 && !isChecked
+            return (
+              <TraceRow
+                key={t.id}
+                trace={t}
+                compareMode={compareMode}
+                isChecked={isChecked}
+                isDisabled={isDisabled}
+                onRowClick={handleRowClick}
+                onToggleSelect={onToggleSelect}
+              />
+            )
+          })}
+          {/* Spacer row after visible items */}
+          {virtualItems.length > 0 && (
+            <tr style={{ height: virtualizer.getTotalSize() - (virtualItems[virtualItems.length - 1].end) }} />
+          )}
+        </TableBody>
+      </Table>
+    </div>
   )
 }

@@ -23,6 +23,10 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AgentLens", lifespan=lifespan)
 
+# GZip compression for JSON responses (skip small payloads)
+from fastapi.middleware.gzip import GZipMiddleware
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

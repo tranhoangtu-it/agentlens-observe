@@ -9,4 +9,14 @@ export default defineConfig({
       '/api': 'http://localhost:8000',
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'react-flow': ['@xyflow/react', '@dagrejs/dagre'],
+          'recharts': ['recharts'],
+        },
+      },
+    },
+  },
 })

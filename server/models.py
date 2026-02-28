@@ -1,8 +1,9 @@
 """SQLModel table definitions and Pydantic request schemas for AgentLens."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from pydantic import BaseModel
+from sqlalchemy import Index
 from sqlmodel import SQLModel, Field
 
 
@@ -12,12 +13,20 @@ from sqlmodel import SQLModel, Field
 class Trace(SQLModel, table=True):
     id: str = Field(primary_key=True)
     agent_name: str = Field(index=True)
-    created_at: datetime = Field(default_factory=datetime.utcnow, index=True)
+    created_at: datetime = Field(
+        default_factory=lambda: datetime.now(timezone.utc), index=True,
+    )
     total_cost_usd: Optional[float] = None
     total_tokens: Optional[int] = None
     span_count: int = 0
     duration_ms: Optional[int] = None
     status: str = Field(default="running", index=True)
+
+    __table_args__ = (
+        Index("ix_trace_status_created", "status", "created_at"),
+        Index("ix_trace_agent_created", "agent_name", "created_at"),
+        Index("ix_trace_cost", "total_cost_usd"),
+    )
 
 
 class Span(SQLModel, table=True):

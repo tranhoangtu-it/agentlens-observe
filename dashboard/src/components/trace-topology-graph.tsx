@@ -1,7 +1,7 @@
 // Trace topology graph — React Flow graph of spans with dagre hierarchical layout
 // Running spans (no end_ms) get a CSS pulse animation; edges from running spans are dashed
 
-import { useMemo, useCallback } from 'react'
+import { useMemo, useCallback, memo } from 'react'
 import {
   ReactFlow,
   Background,
@@ -138,7 +138,7 @@ function buildDagreLayout(spans: Span[]): { nodes: Node[]; edges: Edge[] } {
   return { nodes, edges }
 }
 
-export function TraceTopologyGraph({ spans, selectedSpanId, onSelectSpan }: Props) {
+export const TraceTopologyGraph = memo(function TraceTopologyGraph({ spans, selectedSpanId, onSelectSpan }: Props) {
   const { nodes, edges } = useMemo(() => buildDagreLayout(spans), [spans])
 
   // Apply selected highlight on top of running state
@@ -225,4 +225,4 @@ export function TraceTopologyGraph({ spans, selectedSpanId, onSelectSpan }: Prop
       )}
     </div>
   )
-}
+})

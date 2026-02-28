@@ -1,12 +1,16 @@
 // App root — hash-based routing: #/ = list, #/traces/:id = detail, #/compare/:left/:right = compare
 // Sidebar navigation layout with logo + nav items
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { TracesListPage } from './pages/traces-list-page'
 import { TraceDetailPage } from './pages/trace-detail-page'
-import { TraceComparePage } from './pages/trace-compare-page'
 import { cn } from './lib/utils'
 import { Activity, Cpu } from 'lucide-react'
+
+// Lazy load compare page — rarely used, large dependency (diff utils)
+const TraceComparePage = lazy(() =>
+  import('./pages/trace-compare-page').then((m) => ({ default: m.TraceComparePage })),
+)
 
 type Route =
   | { name: 'list' }
@@ -153,11 +157,13 @@ export default function App() {
             <TraceDetailPage traceId={route.id} onBack={navigateToList} />
           )}
           {route.name === 'compare' && (
-            <TraceComparePage
-              leftId={route.leftId}
-              rightId={route.rightId}
-              onBack={navigateToList}
-            />
+            <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Loading compare...</div>}>
+              <TraceComparePage
+                leftId={route.leftId}
+                rightId={route.rightId}
+                onBack={navigateToList}
+              />
+            </Suspense>
           )}
         </main>
       </div>

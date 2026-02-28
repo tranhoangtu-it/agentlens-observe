@@ -1,6 +1,7 @@
 // Span detail side panel — shows name, type, duration, input/output, cost for selected span
 // Uses Card and ScrollArea primitives for polished layout
 
+import { memo } from 'react'
 import type { Span } from '../lib/api-client'
 import { Card, CardContent } from './ui/card'
 import { ScrollArea } from './ui/scroll-area'
@@ -45,7 +46,7 @@ function CodeBlock({ label, value }: { label: string; value: unknown }) {
   )
 }
 
-export function SpanDetailPanel({ span, onClose }: Props) {
+export const SpanDetailPanel = memo(function SpanDetailPanel({ span, onClose }: Props) {
   const duration = span.end_ms - span.start_ms
 
   return (
@@ -87,4 +88,4 @@ export function SpanDetailPanel({ span, onClose }: Props) {
       </ScrollArea>
     </aside>
   )
-}
+})
