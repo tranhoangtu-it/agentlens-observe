@@ -40,12 +40,13 @@
 # 1. Start the dashboard
 docker run -p 3000:3000 tranhoangtu/agentlens:0.3.0
 
-# 2. Install the SDK
-pip install agentlens-observe
+# 2. Install the SDK (Python or TypeScript)
+pip install agentlens-observe   # Python
+npm install agentlens-observe   # TypeScript/Node.js
 ```
 
 ```python
-# 3. Instrument your agent
+# 3a. Instrument your agent (Python)
 import agentlens
 
 agentlens.configure(server_url="http://localhost:3000")
@@ -62,10 +63,26 @@ run_agent("Latest AI research papers")
 # → Traces stream to http://localhost:3000
 ```
 
+```typescript
+// 3b. Instrument your agent (TypeScript)
+import * as agentlens from "agentlens-observe";
+
+agentlens.configure({ serverUrl: "http://localhost:3000" });
+
+const result = await agentlens.trace("ResearchAgent", async () => {
+  const s = agentlens.span("web_search", "tool_call").enter();
+  const data = await search(query);
+  s.setOutput(data);
+  s.setCost("gpt-4o", { inputTokens: 500, outputTokens: 200 });
+  s.exit();
+  return summarize(data);
+});
+```
+
 ## How It Works
 
 ```
-Your Agent (Python)          AgentLens Server          Browser Dashboard
+Your Agent (Python/TS)       AgentLens Server          Browser Dashboard
       │                            │                         │
       ├── @agentlens.trace ──────► POST /api/traces ───────► Live topology graph
       │   (fire-and-forget)        │                         │
@@ -75,7 +92,7 @@ Any OTel App ────────────────────► POS
       │   (OTLP HTTP JSON)         │                         │
       │                            ├── SSE stream ──────────► span_created events
       │                            │                         │
-      └── Never blocked            └── SQLite + WAL          └── Cost breakdown + diff
+      └── Never blocked            └── SQLite/PostgreSQL      └── Cost breakdown + diff
 ```
 
 ## Framework Integrations
@@ -192,12 +209,19 @@ cd dashboard && npm install && npm run dev
 cd server && python -m venv .venv && .venv/bin/pip install -r requirements.txt
 .venv/bin/uvicorn main:app --reload --port 8000
 
-# SDK
+# Python SDK
 cd sdk && pip install -e ".[dev]"
+
+# TypeScript SDK
+cd sdk-ts && npm install && npm test
 
 # Tests
 cd server && pytest tests/
 cd sdk && pytest tests/
+cd sdk-ts && npm test
+
+# PostgreSQL (optional — default is SQLite)
+DATABASE_URL=postgresql://user:pass@localhost:5432/agentlens .venv/bin/uvicorn main:app --reload
 ```
 
 ## Tech Stack
@@ -205,8 +229,9 @@ cd sdk && pytest tests/
 | Layer | Technology |
 |-------|-----------|
 | Dashboard | React 19, Vite 7, React Flow 12, Tailwind 3, Recharts 3, Radix UI |
-| Server | Python FastAPI, SQLite (WAL mode), SSE |
-| SDK | Python 3.10+, httpx, OTel bridge |
+| Server | Python FastAPI, SQLite (WAL) / PostgreSQL, SSE |
+| Python SDK | Python 3.10+, httpx, OTel bridge |
+| TypeScript SDK | Node.js 18+, zero dependencies, AsyncLocalStorage |
 | Testing | pytest, httpx, respx (90+ tests, >82% coverage) |
 
 ## Roadmap
@@ -217,8 +242,8 @@ cd sdk && pytest tests/
 - [x] ~~Framework integrations (AutoGen, LlamaIndex, Google ADK)~~
 - [x] ~~Replay/time-travel debugging~~
 - [x] ~~OpenTelemetry ingestion (receive OTel spans)~~
-- [ ] PostgreSQL backend
-- [ ] TypeScript SDK
+- [x] ~~PostgreSQL backend~~
+- [x] ~~TypeScript SDK~~
 - [ ] Alerting on agent behavior anomalies
 - [ ] Multi-tenant auth
 

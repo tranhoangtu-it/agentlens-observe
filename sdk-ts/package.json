@@ -1,0 +1,43 @@
+{
+  "name": "agentlens-observe",
+  "version": "0.1.0",
+  "description": "TypeScript SDK for AgentLens — trace AI agents visually",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "agentlens",
+    "observability",
+    "tracing",
+    "ai-agents",
+    "llm",
+    "monitoring"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^25.3.2",
+    "tsup": "^8.0.0",
+    "typescript": "^5.4.0",
+    "vitest": "^3.0.0"
+  }
+}
