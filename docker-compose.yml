@@ -1,0 +1,9 @@
+services:
+  agentlens:
+    build: .
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./data:/data
+    environment:
+      - AGENTLENS_DB_PATH=/data/agentlens.db
