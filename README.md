@@ -180,7 +180,7 @@ cd sdk && pytest tests/
 - [x] ~~OpenTelemetry export~~
 - [x] ~~Search, filters, pagination~~
 - [x] ~~Framework integrations (AutoGen, LlamaIndex, Google ADK)~~
-- [ ] Replay/time-travel debugging
+- [x] ~~Replay/time-travel debugging~~
 - [ ] OpenTelemetry ingestion (receive OTel spans)
 - [ ] PostgreSQL backend
 - [ ] TypeScript SDK

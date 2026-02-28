@@ -37,6 +37,7 @@
 | `pages/traces-list-page.tsx` | Trace discovery, search, filters, pagination |
 | `pages/trace-detail-page.tsx` | Single trace with topology graph + span panel |
 | `pages/trace-compare-page.tsx` | Side-by-side diff of two traces (lazy-loaded) |
+| `pages/trace-replay-page.tsx` | Time-travel replay — route `#/traces/:id/replay` |
 | `components/trace-list-table.tsx` | Virtualized table (@tanstack/react-virtual) |
 | `components/trace-topology-graph.tsx` | React Flow DAG visualization |
 | `components/trace-compare-graphs.tsx` | Dual topology views for comparison |
@@ -62,8 +63,13 @@
 - `use-sse-traces.ts` — EventSource subscription, span_created/trace_updated listeners
 - `use-live-trace-detail.ts` — Real-time trace detail updates
 - `use-trace-filters.ts` — State management for filters
+- `use-replay-controls.ts` — Replay cursor/timer/speed state machine
 - `api-client.ts` — Typed API calls (fetch wrapper)
 - `diff-utils.ts` — Frontend span matching, color coding
+
+**Replay Components** (`components/`)
+- `replay-transport-controls.tsx` — Play/pause, step prev/next, speed selector
+- `replay-timeline-scrubber.tsx` — Gantt bars + range slider for cursor control
 
 **Styling**
 - Tailwind 3 (utility classes)

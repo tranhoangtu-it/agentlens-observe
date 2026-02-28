@@ -9,14 +9,15 @@ import { SpanDetailPanel } from '../components/span-detail-panel'
 import { CostSummaryChart } from '../components/cost-summary-chart'
 import { Badge } from '../components/ui/badge'
 import { Skeleton } from '../components/ui/skeleton'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Play } from 'lucide-react'
 
 interface Props {
   traceId: string
   onBack: () => void
+  onReplay?: (id: string) => void
 }
 
-export function TraceDetailPage({ traceId, onBack }: Props) {
+export function TraceDetailPage({ traceId, onBack, onReplay }: Props) {
   const { trace, spans, loading, error, isLive } = useLiveTraceDetail(traceId)
   const [selectedSpan, setSelectedSpan] = useState<Span | null>(null)
 
@@ -57,6 +58,24 @@ export function TraceDetailPage({ traceId, onBack }: Props) {
             {trace && (
               <span className="text-xs text-muted-foreground shrink-0">
                 {spans.length} span{spans.length !== 1 ? 's' : ''}
+              </span>
+            )}
+
+            {/* Replay button — only shown for completed traces */}
+            {trace && onReplay && trace.status !== 'running' && (
+              <button
+                onClick={() => onReplay(traceId)}
+                className="ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors shrink-0"
+              >
+                <Play size={11} />
+                Replay
+              </button>
+            )}
+
+            {/* Hint when trace is still running */}
+            {trace && trace.status === 'running' && (
+              <span className="ml-auto text-xs text-muted-foreground italic shrink-0">
+                Replay available after trace completes
               </span>
             )}
           </div>

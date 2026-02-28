@@ -1,9 +1,10 @@
-// App root — hash-based routing: #/ = list, #/traces/:id = detail, #/compare/:left/:right = compare
+// App root — hash-based routing: #/ = list, #/traces/:id = detail, #/traces/:id/replay = replay, #/compare/:left/:right = compare
 // Sidebar navigation layout with logo + nav items
 
 import { useState, useEffect, lazy, Suspense } from 'react'
 import { TracesListPage } from './pages/traces-list-page'
 import { TraceDetailPage } from './pages/trace-detail-page'
+import { TraceReplayPage } from './pages/trace-replay-page'
 import { cn } from './lib/utils'
 import { Activity, Cpu } from 'lucide-react'
 
@@ -15,12 +16,16 @@ const TraceComparePage = lazy(() =>
 type Route =
   | { name: 'list' }
   | { name: 'detail'; id: string }
+  | { name: 'replay'; id: string }
   | { name: 'compare'; leftId: string; rightId: string }
 
 function parseHash(hash: string): Route {
   const path = hash.replace(/^#\/?/, '')
   const compareMatch = path.match(/^compare\/([^/]+)\/(.+)$/)
   if (compareMatch) return { name: 'compare', leftId: compareMatch[1], rightId: compareMatch[2] }
+  // Check replay before detail — more specific route first
+  const replayMatch = path.match(/^traces\/([^/]+)\/replay$/)
+  if (replayMatch) return { name: 'replay', id: decodeURIComponent(replayMatch[1]) }
   const detailMatch = path.match(/^traces\/(.+)$/)
   if (detailMatch) return { name: 'detail', id: detailMatch[1] }
   return { name: 'list' }
@@ -73,6 +78,14 @@ export default function App() {
 
   function navigateToCompare(leftId: string, rightId: string) {
     setHash(`compare/${encodeURIComponent(leftId)}/${encodeURIComponent(rightId)}`)
+  }
+
+  function navigateToReplay(id: string) {
+    setHash('traces/' + encodeURIComponent(id) + '/replay')
+  }
+
+  function navigateToDetail(id: string) {
+    setHash(`traces/${encodeURIComponent(id)}`)
   }
 
   function navigateToList() {
@@ -136,6 +149,19 @@ export default function App() {
               </span>
             </>
           )}
+          {route.name === 'replay' && (
+            <>
+              <span className="text-border">/</span>
+              <button
+                onClick={() => navigateToDetail(route.id)}
+                className="text-muted-foreground hover:text-foreground transition-colors font-mono text-xs truncate max-w-xs"
+              >
+                {route.id}
+              </button>
+              <span className="text-border">/</span>
+              <span className="text-foreground font-medium text-xs">Replay</span>
+            </>
+          )}
           {route.name === 'compare' && (
             <>
               <span className="text-border">/</span>
@@ -154,7 +180,10 @@ export default function App() {
             <TracesListPage onSelect={navigateToTrace} onCompare={navigateToCompare} />
           )}
           {route.name === 'detail' && (
-            <TraceDetailPage traceId={route.id} onBack={navigateToList} />
+            <TraceDetailPage traceId={route.id} onBack={navigateToList} onReplay={navigateToReplay} />
+          )}
+          {route.name === 'replay' && (
+            <TraceReplayPage traceId={route.id} onBack={() => navigateToDetail(route.id)} />
           )}
           {route.name === 'compare' && (
             <Suspense fallback={<div className="flex items-center justify-center h-full text-muted-foreground text-sm">Loading compare...</div>}>

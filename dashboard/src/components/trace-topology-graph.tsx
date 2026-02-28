@@ -15,19 +15,13 @@ import {
 import '@xyflow/react/dist/style.css'
 import dagre from '@dagrejs/dagre'
 import type { Span } from '../lib/api-client'
+import { SPAN_TYPE_COLORS as TYPE_COLORS, DEFAULT_SPAN_COLOR } from '../lib/span-type-colors'
 
 interface Props {
   spans: Span[]
   selectedSpanId: string | null
   onSelectSpan: (span: Span | null) => void
-}
-
-// Node color by span type
-const TYPE_COLORS: Record<string, string> = {
-  agent_run: '#3b82f6',   // blue-500
-  tool_call: '#22c55e',   // green-500
-  llm_call:  '#a855f7',   // purple-500
-  handoff:   '#f97316',   // orange-500
+  replayRunningIds?: Set<string>   // optional — when provided, drives running state instead of end_ms == null
 }
 
 // Legend entries for span types
@@ -70,7 +64,7 @@ function hexToRgb(hex: string): string {
 }
 
 function getNodeStyle(type: string, selected: boolean, running: boolean): React.CSSProperties {
-  const color = TYPE_COLORS[type] ?? '#6b7280'
+  const color = TYPE_COLORS[type] ?? DEFAULT_SPAN_COLOR
   const rgbColor = hexToRgb(color)
   return {
     background: selected ? color : `${color}22`,
@@ -85,7 +79,8 @@ function getNodeStyle(type: string, selected: boolean, running: boolean): React.
   }
 }
 
-function buildDagreLayout(spans: Span[]): { nodes: Node[]; edges: Edge[] } {
+// runningIds: set of span IDs considered in-progress; drives node pulse and edge dashing
+function buildDagreLayout(spans: Span[], runningIds: Set<string>): { nodes: Node[]; edges: Edge[] } {
   ensurePulseStyle()
 
   const g = new dagre.graphlib.Graph()
@@ -103,7 +98,7 @@ function buildDagreLayout(spans: Span[]): { nodes: Node[]; edges: Edge[] } {
 
   const nodes: Node[] = spans.map((s) => {
     const pos = g.node(s.id)
-    const running = s.end_ms == null
+    const running = runningIds.has(s.id)
     const dur = s.end_ms ? s.end_ms - s.start_ms : null
     const label = dur != null ? `${s.name}\n${dur}ms` : `${s.name}\n⏳ running`
     return {
@@ -116,8 +111,6 @@ function buildDagreLayout(spans: Span[]): { nodes: Node[]; edges: Edge[] } {
   })
 
   // Running span edges are dashed to signal in-progress connections
-  const runningIds = new Set(spans.filter((s) => s.end_ms == null).map((s) => s.id))
-
   const edges: Edge[] = spans
     .filter((s) => s.parent_id)
     .map((s) => {
@@ -138,22 +131,29 @@ function buildDagreLayout(spans: Span[]): { nodes: Node[]; edges: Edge[] } {
   return { nodes, edges }
 }
 
-export const TraceTopologyGraph = memo(function TraceTopologyGraph({ spans, selectedSpanId, onSelectSpan }: Props) {
-  const { nodes, edges } = useMemo(() => buildDagreLayout(spans), [spans])
+export const TraceTopologyGraph = memo(function TraceTopologyGraph({ spans, selectedSpanId, onSelectSpan, replayRunningIds }: Props) {
+  // Replay mode: use replayRunningIds; live mode: derive from end_ms == null
+  const effectiveRunningIds = useMemo(
+    () => replayRunningIds ?? new Set(spans.filter((s) => s.end_ms == null).map((s) => s.id)),
+    [spans, replayRunningIds],
+  )
+
+  const { nodes, edges } = useMemo(() => buildDagreLayout(spans, effectiveRunningIds), [spans, effectiveRunningIds])
 
   // Apply selected highlight on top of running state
   const styledNodes = useMemo(
     () =>
       nodes.map((n) => {
         const span = (n.data as { span: Span }).span
-        const running = span.end_ms == null
+        // replay mode: running = replayRunningIds membership; live mode: running = end_ms == null
+        const running = effectiveRunningIds.has(span.id)
         return {
           ...n,
           style: getNodeStyle(span.type, n.id === selectedSpanId, running),
           className: running ? 'agentlens-node-running' : undefined,
         }
       }),
-    [nodes, selectedSpanId],
+    [nodes, selectedSpanId, effectiveRunningIds],
   )
 
   const onNodeClick: NodeMouseHandler = useCallback(

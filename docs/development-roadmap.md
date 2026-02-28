@@ -119,13 +119,13 @@
   - Multi-platform observability
   - Unified agent + infrastructure traces
 
-#### 3. Time-Travel Debugging (Replay)
+#### 3. Time-Travel Debugging (Replay) ✅
 - **Rationale:** Allow users to step through agent execution
 - **Work:**
-  - [ ] Record agent state at each span
-  - [ ] Implement trace stepping UI
-  - [ ] Rewind/fast-forward trace playback
-  - [ ] Variable inspector (state at each step)
+  - [x] Record agent state at each span
+  - [x] Implement trace stepping UI
+  - [x] Rewind/fast-forward trace playback
+  - [x] Variable inspector (state at each step)
 
 - **Impact:**
   - Advanced debugging capabilities
@@ -174,7 +174,7 @@
 ### Success Criteria (Phase 3)
 - [ ] PostgreSQL backend proven on 1M+ spans
 - [ ] OTel ingestion passing compliance tests
-- [ ] Time-travel replay usable (UI complete)
+- [x] Time-travel replay usable (UI complete)
 - [ ] Multi-tenant auth production-ready
 - [ ] Alerting framework handling 1000+ rules
 - [ ] TypeScript SDK at feature parity (Python SDK)
