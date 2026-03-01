@@ -8,20 +8,49 @@ Path: `/Users/tranhoangtu/Desktop/PET/my-project/agentlens/`
 - Server: FastAPI + SQLModel + SQLite (WAL) + SSE, Python 3.14 venv at `server/.venv/`
 - SDK: Pure Python (httpx only dep), at `sdk/agentlens/`
 
+### Test Suite Complete (Phase 6 - 2026-02-28)
+**Server**: 38 tests, 82% coverage
+- Storage CRUD: 18 tests (trace create, list with filters, get, add spans)
+- API endpoints: 17 tests (health, ingest, list, get, agents)
+- SSE transport: 3 tests (publish/subscribe, multiple subscribers)
+
+**SDK**: 52 tests, >85% coverage
+- Tracer: 18 tests (sync/async decorator, spans, nesting, context)
+- Cost: 15 tests (known models, edge cases, pricing validation)
+- Transport: 19 tests (server URL, post trace/spans, batch mode, threading)
+
+**Test Infrastructure**:
+- Server: fresh in-memory SQLite per test via conftest.py fixture
+- SDK: respx.mock for httpx + httpx.Response mocking
+- All tests deterministic, non-dependent, no external network calls
+
 ### Test Commands
-- Dashboard build: `cd dashboard && npm run build` (tsc -b + vite build)
-- Server imports: `server/.venv/bin/python -c "from models import ...; from storage import init_db; from sse import SSEBus"`
-- Server run: `server/.venv/bin/uvicorn main:app --port 8005`
-- SDK: `server/.venv/bin/python -c "import sys; sys.path.insert(0,'../sdk'); import agentlens ..."`
+```bash
+# Server tests
+cd /Users/tranhoangtu/Desktop/PET/my-project/agentlens/server && \
+  .venv/bin/python -m pytest tests/ -v [--cov=. --cov-report=term-missing]
 
-### No Automated Test Suite
-No pytest, vitest, or jest tests exist as of 2026-02-28. All verification is ad-hoc scripts.
+# SDK tests
+cd /Users/tranhoangtu/Desktop/PET/my-project/agentlens/sdk && \
+  /path/to/server/.venv/bin/python -m pytest tests/ -v
+```
 
-### Known Issues
-- `storage.py:82` SQL injection risk — raw f-string in `DELETE FROM span WHERE trace_id = '{trace_id}'`
-- No coverage tooling configured
+### Known Issues from Testing
+1. **storage.py span_count bug** (low): add_spans_to_trace() double-counts spans
+2. **datetime.utcnow() deprecation** (medium): Use datetime.now(datetime.UTC)
+3. **diff.py untested** (19% coverage): Phase 4 feature — tests deferred
 
-### Env / Permissions
-- Bash tool may be blocked by permission hook — static analysis fallback used
-- Reports path: `/Users/tranhoangtu/Desktop/PET/my-project/plans/reports/`
-- Dist/node_modules/venv dirs blocked by scout-block hook (read-only workaround via Grep for dist-info)
+### Testing Patterns (Reusable)
+- In-memory SQLite: create_engine + SQLModel.metadata.create_all + text("PRAGMA journal_mode=WAL")
+- Unique test data: uuid4 per test to avoid ID collisions
+- HTTP mocking: respx.mock context + httpx.Response(status_code)
+- Test fixtures: conftest.py with autouse=True for setup/teardown
+- Async support: @pytest.mark.asyncio with pytest-asyncio
+
+### Environment Notes
+- Bash blocked on .venv — use absolute paths always
+- Report: `/Users/tranhoangtu/Desktop/PET/my-project/plans/reports/tester-260228-1255-testing-suite.md`
+- Test files: `/Users/tranhoangtu/Desktop/PET/my-project/agentlens/{server,sdk}/tests/`
+- No relative paths in responses
+- No emojis
+- No colons before tool calls
