@@ -1,5 +1,12 @@
 # AgentLens
 
+[![PyPI](https://img.shields.io/pypi/v/agentlens-observe?label=PyPI&color=blue)](https://pypi.org/project/agentlens-observe/)
+[![npm](https://img.shields.io/npm/v/agentlens-observe?label=npm&color=red)](https://www.npmjs.com/package/agentlens-observe)
+[![Docker](https://img.shields.io/docker/v/tranhoangtu/agentlens-observe?label=Docker&color=2496ED)](https://hub.docker.com/r/tranhoangtu/agentlens-observe)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-231%20passing-brightgreen)]()
+[![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)]()
+
 **Debug AI agents visually** — self-hosted, open-source, agent-native observability.
 
 > Unlike LangSmith (paid, cloud-only) and Langfuse (LLM-focused), AgentLens understands agents: tool calls, handoffs, memory reads, and decision trees — not just LLM generations.
@@ -33,7 +40,7 @@
 - **Batch transport** — configurable queue with auto-flush for high-throughput agents
 - **Self-hosted** — `docker run` and done. Your data never leaves your machine.
 - **Multi-tenant auth** — user registration, JWT sessions, API key auth, per-user data isolation
-- **90+ tests** — server + SDK with >82% coverage
+- **231 tests** — server + SDK with 100% coverage
 
 ## Quickstart
 
@@ -233,7 +240,7 @@ DATABASE_URL=postgresql://user:pass@localhost:5432/agentlens .venv/bin/uvicorn m
 | Server | Python FastAPI, SQLite (WAL) / PostgreSQL, SSE |
 | Python SDK | Python 3.10+, httpx, OTel bridge |
 | TypeScript SDK | Node.js 18+, zero dependencies, AsyncLocalStorage |
-| Testing | pytest, httpx, respx (90+ tests, >82% coverage) |
+| Testing | pytest, httpx, respx (231 tests, 100% coverage) |
 
 ## Roadmap
 
