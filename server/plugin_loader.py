@@ -40,6 +40,10 @@ def load_plugins(app: FastAPI) -> list[ServerPlugin]:
             if plugin is None:
                 logger.warning("Plugin %s has no 'plugin' attribute, skipping", module_name)
                 continue
+            # Validate plugin implements required protocol methods
+            if not isinstance(plugin, ServerPlugin):
+                logger.warning("Plugin %s does not implement ServerPlugin protocol, skipping", module_name)
+                continue
             plugin.register_routes(app)
             _plugins.append(plugin)
             logger.info("Loaded plugin: %s", plugin.name)

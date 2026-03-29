@@ -92,13 +92,13 @@ plugin = _Plugin()
 
     app = FastAPI()
     mock_mod = type("Module", (), {})()
-    mock_plugin = MagicMock()
-    mock_plugin.name = "sample-plugin"
-    mock_mod.plugin = mock_plugin
+    # Use FakePlugin (real protocol impl) instead of MagicMock for isinstance check
+    fake = FakePlugin()
+    mock_mod.plugin = fake
 
     with patch("plugin_loader._PLUGINS_DIR", tmp_path), \
          patch("plugin_loader.importlib.import_module", return_value=mock_mod):
         result = load_plugins(app)
 
     assert len(result) == 1
-    mock_plugin.register_routes.assert_called_once_with(app)
+    assert result[0].name == "test-plugin"

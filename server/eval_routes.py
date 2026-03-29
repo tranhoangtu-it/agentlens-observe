@@ -1,5 +1,6 @@
 """API routes for LLM-as-Judge evaluations."""
 
+import json
 import logging
 from typing import Optional
 
@@ -80,9 +81,11 @@ def run_eval_endpoint(body: EvalRunRequest, user: User = Depends(get_current_use
         raise HTTPException(422, "Max 10 traces per eval run")
 
     results = []
+    errors = []
     for trace_id in body.trace_ids:
         trace_data = get_trace(trace_id, user_id=user.id)
         if not trace_data:
+            errors.append({"trace_id": trace_id, "error": "Trace not found"})
             continue
         trace = trace_data["trace"]
         spans = trace_data["spans"]
@@ -91,13 +94,13 @@ def run_eval_endpoint(body: EvalRunRequest, user: User = Depends(get_current_use
             eval_result = run_eval(criteria, trace, spans, provider, api_key, model)
         except LLMProviderError as e:
             logger.error("Eval LLM call failed for trace %s: %s", trace_id, e)
+            errors.append({"trace_id": trace_id, "error": "LLM call failed"})
             continue
 
         # Extract prompt info from span metadata if available
         prompt_name, prompt_version = None, None
         for s in spans:
             if s.metadata_json:
-                import json
                 try:
                     meta = json.loads(s.metadata_json)
                     if "prompt_name" in meta:
@@ -120,7 +123,7 @@ def run_eval_endpoint(body: EvalRunRequest, user: User = Depends(get_current_use
         })
         results.append(run)
 
-    return {"runs": results, "count": len(results)}
+    return {"runs": results, "count": len(results), "errors": errors}
 
 
 # ── Eval runs listing ────────────────────────────────────────────────────────

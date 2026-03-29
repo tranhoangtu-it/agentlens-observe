@@ -66,7 +66,14 @@ def add_version(
         if not template or template.user_id != user_id:
             return None
 
-        next_version = template.latest_version + 1
+        # Use DB-level MAX to avoid race conditions on concurrent version creation
+        from sqlalchemy import func as sa_func
+        max_stmt = select(sa_func.coalesce(sa_func.max(PromptVersion.version), 0)).where(
+            PromptVersion.prompt_id == prompt_id
+        )
+        current_max = session.exec(max_stmt).one()
+        next_version = current_max + 1
+
         pv = PromptVersion(
             id=str(uuid.uuid4()),
             prompt_id=prompt_id,
@@ -81,7 +88,11 @@ def add_version(
 
         session.add(pv)
         session.add(template)
-        session.commit()
+        try:
+            session.commit()
+        except Exception:
+            session.rollback()
+            return None
         session.refresh(pv)
     return pv
 
