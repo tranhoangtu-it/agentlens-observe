@@ -3,7 +3,7 @@
  * Wires together the TreeView, WebView panel, status bar, and auto-refresh.
  */
 import * as vscode from "vscode";
-import { AgentLensApiClient } from "./api-client";
+import { AgentLensApiClient, TraceRecord } from "./api-client";
 import { getConfig, onConfigChange } from "./config";
 import { TraceTreeProvider, TraceItem } from "./trace-tree-provider";
 import { TraceDetailWebview } from "./trace-detail-webview";
@@ -47,19 +47,21 @@ export function activate(context: vscode.ExtensionContext): void {
 
   const openTraceCmd = vscode.commands.registerCommand(
     "agentlens.openTrace",
-    async (item: TraceItem | undefined) => {
+    async (item: TraceItem | TraceRecord | undefined) => {
       if (!item) {
         vscode.window.showWarningMessage("AgentLens: no trace selected.");
         return;
       }
+      // Handle both TraceItem wrapper and raw TraceRecord from command.arguments
+      const trace: TraceRecord = "trace" in item ? (item as TraceItem).trace : item as TraceRecord;
       // Skip synthetic loading/error items
-      if (item.trace.id.startsWith("__")) {
+      if (trace.id.startsWith("__")) {
         return;
       }
       await TraceDetailWebview.show(
         context,
         client,
-        item.trace.id,
+        trace.id,
         config.endpoint,
       );
     },
