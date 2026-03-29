@@ -98,6 +98,15 @@
 
 #### Alert Engine (2 files, ~150 LOC)
 - **`alert_evaluator.py`** — evaluate_alert_rules(trace_id, agent_name). Evaluates after each trace completes. Absolute + relative thresholds. 60s cooldown per rule. Metric computation: cost, latency, error_rate.
+
+#### Settings & Crypto (2 files, ~140 LOC)
+- **`crypto.py`** — Fernet encryption/decryption using cryptography>=42.0. encrypt_key(plaintext_api_key) / decrypt_key(ciphertext). Stored safely in database.
+- **`settings_models.py`** — UserSettings SQLModel table. llm_provider, llm_model, api_key_encrypted fields. Per-user configuration for AI Autopsy.
+
+#### LLM & Autopsy (3 files, ~180 LOC)
+- **`llm_provider.py`** — LLMProvider abstract base class. OpenAI, Anthropic, Google implementations. Routes to user's configured provider.
+- **`autopsy_models.py`** — Autopsy SQLModel table. trace_id, status (pending|completed|error), analysis_text, recommendations JSON.
+- **`autopsy_analyzer.py`** — analyze_failed_trace(trace_id, user_settings). Calls user's LLM to analyze failure; generates recommendations. Async with timeout protection.
 - **`alert_notifier.py`** — publish_alert_sse() (SSE bus event). fire_webhook() (background thread, urllib, 5s timeout, never raises).
 
 #### SSE Bus (1 file, ~80 LOC)

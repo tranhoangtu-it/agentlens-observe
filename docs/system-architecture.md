@@ -124,6 +124,11 @@ All endpoints except `/api/health` and `/api/auth/*` registration/login require 
 | `/api/alerts` | GET | JWT/ApiKey | List alert events (agent_name, resolved, pagination) |
 | `/api/alerts/{id}/resolve` | PATCH | JWT/ApiKey | Mark alert event resolved |
 | `/api/alerts/summary` | GET | JWT/ApiKey | Unresolved alert count |
+| `/api/settings` | GET | JWT/ApiKey | Get user LLM settings (provider, model) |
+| `/api/settings` | PUT | JWT/ApiKey | Update user LLM settings (encrypted storage) |
+| `/api/traces/{id}/autopsy` | POST | JWT/ApiKey | Request AI failure analysis for trace |
+| `/api/traces/{id}/autopsy` | GET | JWT/ApiKey | Retrieve autopsy results (cached) |
+| `/api/traces/{id}/autopsy` | DELETE | JWT/ApiKey | Delete autopsy analysis |
 
 **Middleware**
 - GZipMiddleware (compress JSON >1KB)
@@ -168,7 +173,7 @@ class Span:                        # models.py
     trace_id: str [FK, INDEX]
     parent_id: str [NULLABLE, FK]
     name: str
-    type: str (llm_call|tool_call|handoff|agent_spawn)
+    type: str (llm_call|tool_call|handoff|agent_spawn|mcp.tool_call|mcp.resource_read|mcp.prompt_get)
     start_ms: int
     end_ms: int [NULLABLE]
     input: str [JSON, NULLABLE]
@@ -207,6 +212,27 @@ class AlertEvent:                  # alert_models.py
     resolved: bool [INDEX]
     created_at: datetime [INDEX]
     # Compound index: (rule_id, created_at)
+
+class UserSettings:                # settings_models.py
+    id: str [PK]
+    user_id: str [UNIQUE, INDEX]
+    llm_provider: str              # "openai"|"anthropic"|"google"|"custom"
+    llm_model: str                 # Model name (e.g., "gpt-4")
+    api_key_encrypted: str         # Encrypted with cryptography.Fernet
+    api_key_iv: str [NULLABLE]     # IV for encryption
+    created_at: datetime
+    updated_at: datetime
+
+class Autopsy:                     # autopsy_models.py
+    id: str [PK]
+    trace_id: str [INDEX]
+    user_id: str [NULLABLE, INDEX]
+    status: str                    # "pending"|"completed"|"error"
+    analysis_text: str [NULLABLE]  # AI-generated failure analysis
+    recommendations: str [NULLABLE] # JSON array of recommendations
+    error_message: str [NULLABLE]  # Error details if failed
+    created_at: datetime
+    updated_at: datetime
 ```
 
 **Storage** (`server/storage.py`)
@@ -238,6 +264,17 @@ class AlertEvent:                  # alert_models.py
 - `alert_storage.py` — CRUD with user_id scoping: create_alert_rule, list_alert_rules, update_alert_rule, delete_alert_rule, create_alert_event, list_alert_events, resolve_alert_event, get_unresolved_alert_count
 - `alert_evaluator.py` — evaluate_alert_rules(trace_id, agent_name): called after each trace completion; supports absolute + relative (rolling baseline) thresholds; 60s cooldown per rule
 - `alert_notifier.py` — publish_alert_sse() + fire_webhook() (fire-and-forget background thread, 5s timeout, stdlib urllib)
+
+**Settings & Crypto Modules** (`server/settings_*.py`, `server/crypto.py`)
+- `settings_models.py` — UserSettings SQLModel table with llm_provider, llm_model, encrypted api_key
+- `settings_storage.py` — CRUD: get_user_settings, update_user_settings (user_id scoped)
+- `crypto.py` — Fernet encryption/decryption for API keys; `encrypt_key(api_key) -> ciphertext`, `decrypt_key(ciphertext) -> api_key`
+
+**Autopsy Modules** (`server/autopsy_*.py`, `server/llm_provider.py`)
+- `autopsy_models.py` — Autopsy SQLModel table with status, analysis_text, recommendations
+- `autopsy_storage.py` — CRUD: create_autopsy, get_autopsy, list_autopsies, delete_autopsy (user_id scoped)
+- `autopsy_analyzer.py` — analyze_failed_trace(trace_id, llm_provider, llm_model, api_key) → calls user's LLM with failure context
+- `llm_provider.py` — LLMProvider abstract class; OpenAI, Anthropic, Google implementations; routes to user's configured provider
 
 **Diff Algorithm** (`server/diff.py`)
 - LCS (Longest Common Subsequence) on span tree
@@ -275,6 +312,7 @@ class AlertEvent:                  # alert_models.py
 - `autogen.py` — patch_autogen()
 - `llamaindex.py` — AgentLensCallbackHandler
 - `google_adk.py` — patch_google_adk()
+- `mcp.py` — patch_mcp() for Model Context Protocol; traces mcp.tool_call, mcp.resource_read, mcp.prompt_get spans
 
 ### TypeScript SDK (`sdk-ts/src/`)
 
@@ -307,6 +345,9 @@ class AlertEvent:                  # alert_models.py
 
 **Types** (`types.ts`)
 - `TracerConfig`, `SpanData`, `TracePayload`, `SpansPayload`, `LogEntry`, `CostData`, `SpanExporter`, `ISpanContext`
+
+**Integrations** (`integrations/`)
+- `mcp.ts` — patchMcp() function for Model Context Protocol; auto-traces MCP client operations (tool_call, resource_read, prompt_get)
 
 **Testing** — 30 tests with vitest
 

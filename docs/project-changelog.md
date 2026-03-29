@@ -2,6 +2,79 @@
 
 All notable changes documented. Format follows [Keep a Changelog](https://keepachangelog.com/).
 
+## [0.7.0] — 2026-03-29
+
+**Version:** 0.7.0 | **Status:** Production | **Release Type:** Feature Release
+
+### Added
+
+#### LLM Settings & Encryption
+- **GET/PUT /api/settings** — User LLM configuration endpoints
+- **Supported Providers:** OpenAI, Anthropic, Google, Custom (extensible)
+- **Encrypted Storage** — API keys encrypted with cryptography.Fernet (never stored plain)
+- **Per-User Isolation** — Each user has separate LLM settings
+- **Dashboard Settings Page** — UI for configuring LLM provider and model
+
+#### AI Failure Autopsy
+- **POST /api/traces/{id}/autopsy** — Request AI analysis of failed traces
+- **GET /api/traces/{id}/autopsy** — Retrieve cached analysis results
+- **DELETE /api/traces/{id}/autopsy** — Remove autopsy analysis
+- **AI-Powered Analysis** — Uses user's configured LLM provider to analyze failure
+- **Recommendations** — AI generates root cause and remediation suggestions
+- **Dashboard Autopsy Panel** — Integrated into trace detail page
+
+#### MCP Protocol Integration
+- **Python: `agentlens.integrations.mcp.patch_mcp()`** — Auto-instrument MCP servers
+- **TypeScript: `patchMcp()`** from `agentlens/integrations/mcp` — MCP client tracing
+- **New Span Types:** `mcp.tool_call`, `mcp.resource_read`, `mcp.prompt_get`
+- **Optional Dependency** — `pip install agentlens[mcp]` for MCP features
+
+#### Server Modules
+- **`crypto.py`** — Fernet encryption/decryption for secure credential storage
+- **`settings_models.py`, `settings_storage.py`** — User LLM settings CRUD with encryption
+- **`llm_provider.py`** — Abstract LLM provider interface; OpenAI, Anthropic, Google impls
+- **`autopsy_models.py`, `autopsy_storage.py`, `autopsy_analyzer.py`** — Failure analysis system
+
+### Changed
+- Span type enum expanded to include MCP operation types
+- Database schema: added UserSettings and Autopsy tables
+- FastAPI main.py: added settings and autopsy route handlers
+
+### Dependencies
+- **Added:** `cryptography>=42.0` for credential encryption
+- **Optional:** `mcp>=0.8.0` (only when installing with `[mcp]` extra)
+
+### Upgrade Instructions
+
+**From v0.6.0 to v0.7.0:**
+
+1. **Docker Image Update**
+   ```bash
+   docker pull tranhoangtu/agentlens-observe:0.7.0
+   docker run -p 3000:3000 -e AGENTLENS_JWT_SECRET=your-secret tranhoangtu/agentlens-observe:0.7.0
+   ```
+
+2. **SDK Update**
+   ```bash
+   # Python
+   pip install --upgrade agentlens-observe==0.7.0
+
+   # For MCP integration
+   pip install agentlens-observe[mcp]==0.7.0
+
+   # TypeScript
+   npm install agentlens-observe@0.7.0
+   ```
+
+3. **New Features (Optional)**
+   - Configure LLM settings via dashboard Settings page
+   - Enable AI Autopsy by setting up LLM provider
+   - Instrument MCP servers with patch_mcp() / patchMcp()
+
+4. **API Compatibility** — All v0.6.0 endpoints unchanged; new endpoints are additive
+
+---
+
 ## [0.6.0] — 2026-03-01
 
 **Version:** 0.6.0 | **Status:** Production | **Release Type:** Quality & Infrastructure Release

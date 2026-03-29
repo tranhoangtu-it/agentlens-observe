@@ -242,7 +242,7 @@ class SpanIn(BaseModel):
     """Client → Server"""
     span_id: str
     name: str
-    type: str  # "llm_call" | "tool_call" | "handoff" | "agent_spawn"
+    type: str  # "llm_call" | "tool_call" | "handoff" | "agent_spawn" | "mcp.tool_call" | "mcp.resource_read" | "mcp.prompt_get"
     start_ms: int
     end_ms: Optional[int] = None
     input: Optional[str] = None
@@ -257,6 +257,19 @@ class SpanOut(BaseModel):
     name: str
     duration_ms: int
     cost_usd: Optional[float] = None
+
+class UserSettings(BaseModel):
+    """User LLM configuration"""
+    llm_provider: str  # "openai" | "anthropic" | "google" | "custom"
+    llm_model: str     # e.g., "gpt-4", "claude-3-opus"
+    api_key_encrypted: str  # Stored encrypted, never returned
+
+class Autopsy(BaseModel):
+    """AI failure analysis"""
+    trace_id: str
+    status: str  # "pending" | "completed" | "error"
+    analysis_text: Optional[str]  # AI-generated analysis
+    recommendations: Optional[list[str]]  # Actionable fixes
 ```
 
 ### HTTP Status Codes

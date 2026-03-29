@@ -125,7 +125,47 @@
 
 ---
 
-## Phase 4: Enterprise Features (Q2 2026)
+## Phase 4: LLM Settings & Autopsy (Q1 2026)
+
+**Target Date:** March 2026 | **Status:** Shipped (v0.7.0)
+
+### Completed Features
+
+#### 1. User LLM Settings ✅
+- [x] GET/PUT /api/settings endpoints
+- [x] Support for OpenAI, Anthropic, Google, Custom providers
+- [x] Encrypted credential storage (cryptography>=42.0)
+- [x] Per-user API key isolation
+- [x] Dashboard settings page
+
+#### 2. AI Failure Autopsy ✅
+- [x] POST/GET/DELETE /api/traces/{id}/autopsy endpoints
+- [x] AI-powered trace failure analysis
+- [x] Root cause identification
+- [x] Actionable recommendations
+- [x] Dashboard autopsy panel on trace detail
+
+#### 3. MCP Protocol Integration ✅
+- [x] Python: patch_mcp() for MCP server tracing
+- [x] TypeScript: patchMcp() for MCP client tracing
+- [x] New span types: mcp.tool_call, mcp.resource_read, mcp.prompt_get
+- [x] Optional dependency: pip install agentlens[mcp]
+
+#### 4. Server Modules ✅
+- [x] crypto.py — Fernet encryption/decryption
+- [x] settings_*.py — User settings CRUD + encryption
+- [x] llm_provider.py — Provider abstraction + implementations
+- [x] autopsy_*.py — Analysis system + storage
+
+### Success Criteria (Phase 4)
+- [x] Encrypted credential storage (no plaintext API keys in DB)
+- [x] AI autopsy callable via API + usable in UI
+- [x] MCP integration available for Python + TypeScript
+- [x] Optional dependency architecture (not required for core)
+
+---
+
+## Phase 5: Enterprise Features (Q2 2026)
 
 **Target Date:** April-June 2026 | **Status:** In Planning
 
@@ -298,8 +338,9 @@ Community feedback shapes AgentLens roadmap. To contribute:
 
 2026
 ├── Mar: Phase 3 (v0.6.0 — Quality, Infrastructure) ✅
-├── Apr-Jun: Phase 4 (v0.7.0 — PostgreSQL, RBAC)
-├── Jul-Sep: Phase 5 (Community, Ecosystem)
+├── Mar: Phase 4 (v0.7.0 — LLM Settings, Autopsy, MCP) ✅
+├── Apr-Jun: Phase 5 (v0.8.0 — PostgreSQL, RBAC)
+├── Jul-Sep: Phase 6 (Community, Ecosystem)
 └── Oct-Dec: v1.0.0 planning
 
 2026+
@@ -311,18 +352,18 @@ Community feedback shapes AgentLens roadmap. To contribute:
 ## Quarterly Updates
 
 ### Q1 2026 (Jan-Mar)
-- **Release:** v0.6.0 (Mar)
-- **Focus:** Test coverage, security hardening, documentation
-- **Metrics:** 100% prod coverage, 231 tests, 18-page docs site, 6 GitHub badges
-- **Status:** Feature-complete milestone achieved ✅
+- **v0.6.0 (Mar)** — Test coverage, security hardening, documentation
+  - Metrics: 100% prod coverage, 231 tests, 18-page docs site, 6 GitHub badges ✅
+- **v0.7.0 (Mar)** — LLM Settings, Autopsy, MCP Integration
+  - Metrics: Encrypted credentials, AI failure analysis, MCP tracing ✅
 
 ### Q2 2026 (Apr-Jun)
-- **Release:** v0.7.0 (May-Jun)
+- **Release:** v0.8.0 (May-Jun)
 - **Focus:** PostgreSQL backend, RBAC, multi-instance scaling
 - **Metrics:** 500+ GitHub stars, PostgreSQL support, 10K PyPI/month
 
 ### Q3 2026 (Jul-Sep)
-- **Release:** v0.8.0+ (patches)
+- **Release:** v0.9.0 (patches)
 - **Focus:** Community ecosystem, marketplace, export integrations
 - **Metrics:** 750+ GitHub stars, 50K PyPI/month, plugin ecosystem
 

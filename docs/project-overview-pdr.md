@@ -90,6 +90,26 @@ AgentLens is a self-hosted, open-source AI agent observability platform. Unlike 
 - [x] 100% production code coverage
 - [x] pytest, httpx, respx, vitest test stack
 
+### F11: LLM Settings & Configuration
+- [x] User LLM settings endpoints (GET/PUT /api/settings)
+- [x] Support for bring-your-own API key (OpenAI, Anthropic, Google, etc.)
+- [x] Encrypted credential storage (cryptography>=42.0)
+- [x] Dashboard settings page for LLM config
+- [x] Per-user credential isolation
+
+### F12: AI Failure Autopsy
+- [x] POST/GET/DELETE /api/traces/{id}/autopsy endpoint
+- [x] AI-powered analysis of failed traces
+- [x] Uses user-configured LLM provider
+- [x] Autopsy panel on trace detail page
+- [x] Root cause analysis and recommendations
+
+### F13: MCP Protocol Integration
+- [x] Python: `agentlens.integrations.mcp.patch_mcp()` for MCP server tracing
+- [x] TypeScript: `patchMcp()` from `agentlens/integrations/mcp`
+- [x] New span types: `mcp.tool_call`, `mcp.resource_read`, `mcp.prompt_get`
+- [x] Support via optional dependency: `pip install agentlens[mcp]`
+
 ## Non-Functional Requirements
 
 ### Performance
@@ -144,7 +164,7 @@ Your Agent (Python)          AgentLens Server          Browser Dashboard
 | Testing | pytest, httpx, respx (server/Python SDK); vitest (TypeScript SDK) |
 | Deployment | Docker (multi-stage), PyPI, npm |
 
-## Key Features (v0.6.0)
+## Key Features (v0.7.0)
 
 1. **Live trace streaming** — Watch agent think in real-time
 2. **Agent topology graph** — Interactive DAG of tool calls, handoffs
@@ -158,7 +178,10 @@ Your Agent (Python)          AgentLens Server          Browser Dashboard
 10. **TypeScript SDK** — Node 18+, zero prod deps, ESM+CJS, `configure/trace/span/log/addExporter/currentTrace`
 11. **Multi-tenant auth** — JWT + API key, per-user isolation, login UI
 12. **Alerting** — cost/latency/error_rate rules, absolute + relative thresholds, SSE + webhook
-13. **Self-hosted** — Your data, your machine
+13. **LLM Settings** — BYO API keys for OpenAI, Anthropic, Google with encrypted storage
+14. **AI Autopsy** — AI-powered failure analysis using user's LLM provider
+15. **MCP Integration** — Trace Model Context Protocol servers (Python + TypeScript)
+16. **Self-hosted** — Your data, your machine
 
 ## Success Metrics
 
@@ -186,6 +209,8 @@ Your Agent (Python)          AgentLens Server          Browser Dashboard
 - React 19
 - SQLite (current), PostgreSQL (future)
 - TypeScript SDK: zero prod dependencies (AsyncLocalStorage, native fetch)
+- cryptography>=42.0 (for credential encryption)
+- Optional: `pip install agentlens[mcp]` for MCP integration
 
 ## Success Criteria
 
