@@ -1,15 +1,17 @@
 // Trace detail page — topology graph + span detail panel + cost chart for a single trace
 // Uses useLiveTraceDetail for real-time SSE updates while trace is running
 
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useLiveTraceDetail } from '../lib/use-live-trace-detail'
 import type { Span } from '../lib/api-client'
 import { TraceTopologyGraph } from '../components/trace-topology-graph'
 import { SpanDetailPanel } from '../components/span-detail-panel'
 import { CostSummaryChart } from '../components/cost-summary-chart'
+import { AutopsyPanel } from '../components/autopsy-panel'
 import { Badge } from '../components/ui/badge'
 import { Skeleton } from '../components/ui/skeleton'
-import { ArrowLeft, Play } from 'lucide-react'
+import { ArrowLeft, Play, Microscope } from 'lucide-react'
+import { triggerAutopsy, fetchAutopsy, deleteAutopsy, type AutopsyResult } from '../lib/autopsy-api-client'
 
 interface Props {
   traceId: string
@@ -20,6 +22,43 @@ interface Props {
 export function TraceDetailPage({ traceId, onBack, onReplay }: Props) {
   const { trace, spans, loading, error, isLive } = useLiveTraceDetail(traceId)
   const [selectedSpan, setSelectedSpan] = useState<Span | null>(null)
+  const [autopsyResult, setAutopsyResult] = useState<AutopsyResult | null>(null)
+  const [autopsyLoading, setAutopsyLoading] = useState(false)
+  const [autopsyError, setAutopsyError] = useState<string | null>(null)
+  const [showAutopsy, setShowAutopsy] = useState(false)
+
+  // Check for cached autopsy on load
+  useEffect(() => {
+    fetchAutopsy(traceId).then((r) => { if (r) setAutopsyResult(r) }).catch(() => {})
+  }, [traceId])
+
+  const handleAutopsy = useCallback(async () => {
+    setShowAutopsy(true)
+    setAutopsyLoading(true)
+    setAutopsyError(null)
+    try {
+      const result = await triggerAutopsy(traceId)
+      setAutopsyResult(result)
+    } catch (e: any) {
+      setAutopsyError(e.message || 'Autopsy failed')
+    } finally {
+      setAutopsyLoading(false)
+    }
+  }, [traceId])
+
+  const handleRerunAutopsy = useCallback(async () => {
+    setAutopsyLoading(true)
+    setAutopsyError(null)
+    try {
+      await deleteAutopsy(traceId)
+      const result = await triggerAutopsy(traceId)
+      setAutopsyResult(result)
+    } catch (e: any) {
+      setAutopsyError(e.message || 'Re-run failed')
+    } finally {
+      setAutopsyLoading(false)
+    }
+  }, [traceId])
 
   return (
     <div className="flex flex-col h-full">
@@ -61,15 +100,27 @@ export function TraceDetailPage({ traceId, onBack, onReplay }: Props) {
               </span>
             )}
 
-            {/* Replay button — only shown for completed traces */}
-            {trace && onReplay && trace.status !== 'running' && (
-              <button
-                onClick={() => onReplay(traceId)}
-                className="ml-auto flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors shrink-0"
-              >
-                <Play size={11} />
-                Replay
-              </button>
+            {/* Action buttons — only shown for completed traces */}
+            {trace && trace.status !== 'running' && (
+              <div className="ml-auto flex items-center gap-2 shrink-0">
+                <button
+                  onClick={handleAutopsy}
+                  disabled={autopsyLoading}
+                  className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors disabled:opacity-50"
+                >
+                  <Microscope size={11} />
+                  {autopsyResult ? 'Autopsy' : 'Autopsy'}
+                </button>
+                {onReplay && (
+                  <button
+                    onClick={() => onReplay(traceId)}
+                    className="flex items-center gap-1.5 text-xs px-2.5 py-1 rounded border border-border text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors"
+                  >
+                    <Play size={11} />
+                    Replay
+                  </button>
+                )}
+              </div>
             )}
 
             {/* Hint when trace is still running */}
@@ -116,6 +167,19 @@ export function TraceDetailPage({ traceId, onBack, onReplay }: Props) {
               <SpanDetailPanel
                 span={selectedSpan}
                 onClose={() => setSelectedSpan(null)}
+              />
+            )}
+            {showAutopsy && (
+              <AutopsyPanel
+                result={autopsyResult}
+                loading={autopsyLoading}
+                error={autopsyError}
+                onClose={() => setShowAutopsy(false)}
+                onRerun={handleRerunAutopsy}
+                onSpanClick={(id) => {
+                  const span = spans.find((s) => s.id === id)
+                  if (span) setSelectedSpan(span)
+                }}
               />
             )}
           </div>

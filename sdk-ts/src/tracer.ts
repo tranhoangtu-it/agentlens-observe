@@ -34,7 +34,7 @@ function strTruncate(v: unknown, limit = 4096): string | null {
 
 // --- Context storage ---
 
-const traceStorage = new AsyncLocalStorage<ActiveTrace>();
+export const traceStorage = new AsyncLocalStorage<ActiveTrace>();
 
 // Global list of registered exporters
 const exporters: SpanExporter[] = [];

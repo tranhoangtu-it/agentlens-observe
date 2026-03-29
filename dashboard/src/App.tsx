@@ -8,11 +8,12 @@ import { TraceReplayPage } from './pages/trace-replay-page'
 import { LoginPage } from './pages/login-page'
 import { ApiKeysPage } from './pages/api-keys-page'
 import { cn } from './lib/utils'
-import { Activity, Bell, Settings, Cpu, Key, LogOut } from 'lucide-react'
+import { Activity, Bell, Settings, Cpu, Key, LogOut, Sliders } from 'lucide-react'
 import { AlertsListPage } from './pages/alerts-list-page'
 import { AlertRulesPage } from './pages/alert-rules-page'
 import { fetchAlertsSummary } from './lib/alert-api-client'
 import { AuthProvider, useAuth } from './lib/auth-context'
+import { SettingsPage } from './pages/settings-page'
 
 // Lazy load compare page — rarely used, large dependency (diff utils)
 const TraceComparePage = lazy(() =>
@@ -27,6 +28,7 @@ type Route =
   | { name: 'alerts' }
   | { name: 'alert-rules' }
   | { name: 'api-keys' }
+  | { name: 'settings' }
   | { name: 'login' }
 
 function parseHash(hash: string): Route {
@@ -35,6 +37,7 @@ function parseHash(hash: string): Route {
   if (path === 'alerts') return { name: 'alerts' }
   if (path === 'alert-rules') return { name: 'alert-rules' }
   if (path === 'api-keys') return { name: 'api-keys' }
+  if (path === 'settings') return { name: 'settings' }
   const compareMatch = path.match(/^compare\/([^/]+)\/(.+)$/)
   if (compareMatch) return { name: 'compare', leftId: compareMatch[1], rightId: compareMatch[2] }
   const replayMatch = path.match(/^traces\/([^/]+)\/replay$/)
@@ -166,6 +169,12 @@ function AuthenticatedApp() {
             active={route.name === 'api-keys'}
             onClick={() => setHash('api-keys')}
           />
+          <NavItem
+            icon={Sliders}
+            label="Settings"
+            active={route.name === 'settings'}
+            onClick={() => setHash('settings')}
+          />
         </nav>
 
         {/* User menu footer */}
@@ -239,6 +248,9 @@ function AuthenticatedApp() {
           {route.name === 'api-keys' && (
             <span className="text-foreground font-medium">API Keys</span>
           )}
+          {route.name === 'settings' && (
+            <span className="text-foreground font-medium">Settings</span>
+          )}
         </header>
 
         {/* Page content */}
@@ -269,6 +281,9 @@ function AuthenticatedApp() {
           )}
           {route.name === 'api-keys' && (
             <ApiKeysPage />
+          )}
+          {route.name === 'settings' && (
+            <SettingsPage />
           )}
         </main>
       </div>

@@ -17,6 +17,8 @@ from main import app
 import storage
 from models import Trace, Span
 from auth_models import User, ApiKey  # noqa: F401 — register auth tables
+from settings_models import UserSettings  # noqa: F401 — register settings table
+from autopsy_models import AutopsyResult  # noqa: F401 — register autopsy table
 
 
 @pytest.fixture(autouse=True)

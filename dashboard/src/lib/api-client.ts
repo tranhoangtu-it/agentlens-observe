@@ -27,6 +27,7 @@ export interface Span {
   cost_input_tokens: number
   cost_output_tokens: number
   cost_usd: number
+  metadata_json: string | null
 }
 
 export interface TracesResponse {

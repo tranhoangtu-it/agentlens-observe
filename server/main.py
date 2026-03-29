@@ -20,6 +20,8 @@ from alert_routes import router as alert_router
 from alert_evaluator import evaluate_alert_rules
 from auth_routes import router as auth_router
 from auth_seed import seed_admin
+from settings_routes import router as settings_router
+from autopsy_routes import router as autopsy_router
 
 
 @asynccontextmanager
@@ -37,6 +39,8 @@ app.add_middleware(GZipMiddleware, minimum_size=1000)
 
 app.include_router(alert_router)
 app.include_router(auth_router)
+app.include_router(settings_router)
+app.include_router(autopsy_router)
 
 _cors_origins_env = os.environ.get(
     "AGENTLENS_CORS_ORIGINS",

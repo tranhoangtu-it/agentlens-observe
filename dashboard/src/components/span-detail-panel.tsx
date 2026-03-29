@@ -7,6 +7,7 @@ import { Card, CardContent } from './ui/card'
 import { ScrollArea } from './ui/scroll-area'
 import { Separator } from './ui/separator'
 import { X } from 'lucide-react'
+import { McpToolCallPanel } from './mcp-tool-call-panel'
 
 interface Props {
   span: Span
@@ -48,6 +49,10 @@ function CodeBlock({ label, value }: { label: string; value: unknown }) {
 
 export const SpanDetailPanel = memo(function SpanDetailPanel({ span, onClose }: Props) {
   const duration = span.end_ms - span.start_ms
+  const isMcp = span.type.startsWith('mcp.')
+  const mcpMetadata = isMcp && span.metadata_json
+    ? (() => { try { return JSON.parse(span.metadata_json) } catch { return null } })()
+    : null
 
   return (
     <aside className="w-80 shrink-0 bg-card border-l border-border flex flex-col animate-fade-in">
@@ -81,6 +86,10 @@ export const SpanDetailPanel = memo(function SpanDetailPanel({ span, onClose }: 
           </dl>
 
           <Separator className="my-3" />
+
+          {mcpMetadata && (
+            <McpToolCallPanel spanType={span.type} metadata={mcpMetadata} />
+          )}
 
           <CodeBlock label="Input"  value={span.input} />
           <CodeBlock label="Output" value={span.output} />
