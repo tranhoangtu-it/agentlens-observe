@@ -7,3 +7,13 @@ services:
       - ./data:/data
     environment:
       - AGENTLENS_DB_PATH=/data/agentlens.db
+      - AGENTLENS_JWT_SECRET=${AGENTLENS_JWT_SECRET:-change-me-in-production}
+      - AGENTLENS_ADMIN_EMAIL=${AGENTLENS_ADMIN_EMAIL:-admin@agentlens.local}
+      - AGENTLENS_ADMIN_PASSWORD=${AGENTLENS_ADMIN_PASSWORD:-admin}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:3000/api/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped

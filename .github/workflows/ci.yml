@@ -1,0 +1,93 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AGENTLENS_JWT_SECRET: ci-test-secret-do-not-use-in-production
+
+jobs:
+  server-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r server/requirements.txt
+      - name: Run tests
+        run: cd server && python -m pytest tests/ -q --tb=short
+
+  sdk-python-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - name: Install SDK
+        run: cd sdk && pip install -e ".[dev]"
+      - name: Run tests
+        run: cd sdk && python -m pytest tests/ -q --tb=short
+
+  sdk-ts-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: sdk-ts/package-lock.json
+      - name: Install and build
+        run: cd sdk-ts && npm ci && npm run build
+      - name: Typecheck
+        run: cd sdk-ts && npm run typecheck
+
+  sdk-dotnet-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Build and test
+        run: cd sdk-dotnet && dotnet build && dotnet test --verbosity minimal
+
+  dashboard-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: dashboard/package-lock.json
+      - name: Install and build
+        run: cd dashboard && npm ci && npm run build
+      - name: Lint
+        run: cd dashboard && npm run lint
+
+  cli-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+          cache-dependency-path: cli/go.sum
+      - name: Build
+        run: cd cli && go build -o agentlens .
+
+  docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build Docker image
+        run: docker build -t agentlens:ci .

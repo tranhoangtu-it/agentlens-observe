@@ -69,7 +69,15 @@ app.add_middleware(
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    """Health check with DB connectivity verification."""
+    try:
+        from sqlmodel import Session, text
+        engine = storage._get_engine()
+        with Session(engine) as session:
+            session.exec(text("SELECT 1"))
+        return {"status": "ok", "db": "connected"}
+    except Exception as e:
+        return {"status": "degraded", "db": f"error: {e}"}
 
 
 # ── Trace ingestion ───────────────────────────────────────────────────────────
