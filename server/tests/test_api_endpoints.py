@@ -53,7 +53,9 @@ class TestHealthEndpoint:
         """Health check returns 200."""
         response = client.get("/api/health")
         assert response.status_code == 200
-        assert response.json() == {"status": "ok"}
+        data = response.json()
+        assert data["status"] == "ok"
+        assert data["db"] == "connected"
 
 
 class TestIngestTraceEndpoint:

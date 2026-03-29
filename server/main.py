@@ -13,6 +13,7 @@ from auth_deps import get_current_user
 from auth_models import User
 from models import SpanIn, SpansIn, TraceIn
 from sse import bus
+import storage
 from storage import add_spans_to_trace, create_trace, get_trace, get_trace_pair, init_db, list_agents, list_traces
 from diff import compute_diff
 from otel_mapper import map_otlp_request
@@ -71,10 +72,11 @@ app.add_middleware(
 def health():
     """Health check with DB connectivity verification."""
     try:
-        from sqlmodel import Session, text
+        from sqlmodel import Session
+        from sqlalchemy import text
         engine = storage._get_engine()
         with Session(engine) as session:
-            session.exec(text("SELECT 1"))
+            session.execute(text("SELECT 1"))
         return {"status": "ok", "db": "connected"}
     except Exception as e:
         return {"status": "degraded", "db": f"error: {e}"}
