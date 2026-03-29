@@ -144,7 +144,9 @@ All endpoints except `/api/health` and `/api/auth/*` registration/login require 
 
 **Middleware**
 - GZipMiddleware (compress JSON >1KB)
-- CORSMiddleware (allow all origins for dev)
+- CORSMiddleware — Configurable via `AGENTLENS_CORS_ORIGINS` env (defaults: `localhost:3000,localhost:5173` for dev)
+  - Allowed Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS
+  - Allowed Headers: Authorization, Content-Type, X-API-Key
 
 **Database** (`server/models.py`, `server/auth_models.py`, `server/alert_models.py`, `server/prompt_models.py`, `server/eval_models.py`)
 
@@ -315,7 +317,11 @@ class EvalRun:                     # eval_models.py
 - `auth_models.py` — User + ApiKey SQLModel tables + request schemas
 - `auth_storage.py` — CRUD: create_user, get_user_by_email, verify_password (bcrypt), create_api_key, validate_api_key (SHA-256 lookup), list_user_api_keys, delete_api_key
 - `auth_jwt.py` — create_token / decode_token (PyJWT, HS256, 24h expiry); secret from AGENTLENS_JWT_SECRET env or auto-generated
-- `auth_deps.py` — get_current_user FastAPI dependency: reads Authorization header (Bearer JWT or ApiKey), also checks X-API-Key header
+- `auth_deps.py` — get_current_user FastAPI dependency: reads authorization from:
+  1. `Authorization: Bearer <jwt>` header (dashboard)
+  2. `Authorization: ApiKey <al_xxx>` header (SDK with API key)
+  3. `X-API-Key: <al_xxx>` header (SDK convenience)
+  4. `?token=<jwt>` query parameter (SSE/EventSource fallback — required since EventSource can't set headers)
 - `auth_routes.py` — /api/auth/* endpoints
 - `auth_seed.py` — Creates admin@agentlens.local on first run; migrates orphan traces/alerts to admin
 
@@ -354,6 +360,7 @@ class EvalRun:                     # eval_models.py
 
 **Transport** (`transport.py`)
 - HTTPClient wrapper (httpx)
+- API key support: `set_api_key(key)` function configures `X-API-Key` header for authenticated requests
 - Batch queue (configurable batch_size, batch_interval)
 - Auto-flush on timer or queue full
 - Fire-and-forget (non-blocking)
@@ -384,7 +391,7 @@ class EvalRun:                     # eval_models.py
 
 | Function | Description |
 |----------|-------------|
-| `configure(config: TracerConfig)` | Set `serverUrl`, batch options |
+| `configure(config: TracerConfig)` | Set `serverUrl`, `apiKey` (optional), batch options |
 | `trace(agentName, fn, opts?)` | Run `fn` inside a named trace context |
 | `span(name, spanType?)` | Create child span; call `.enter()` / `.exit()` |
 | `log(message, extra?)` | Add timestamped log to the active span |
@@ -397,9 +404,10 @@ class EvalRun:                     # eval_models.py
 - `SpanContext` — `.enter()`, `.exit()`, `.setOutput()`, `.setCost()`
 
 **Transport** (`transport.ts`)
-- `postTrace()` — POST all spans to `/api/traces`
-- `postSpans()` — POST incremental spans to `/api/traces/{id}/spans`
+- `postTrace()` — POST all spans to `/api/traces` (with optional X-API-Key header if configured)
+- `postSpans()` — POST incremental spans to `/api/traces/{id}/spans` (with optional X-API-Key header if configured)
 - `flushBatch()` — Flush pending spans queue
+- API key support: `apiKey` in `TracerConfig` configures `X-API-Key` header for authenticated requests
 
 **Cost** (`cost.ts`)
 - `calculateCost(model, inputTokens, outputTokens) -> number`
