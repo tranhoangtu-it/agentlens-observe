@@ -60,8 +60,8 @@ _cors_origins = [o.strip() for o in _cors_origins_env.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_cors_origins,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "X-API-Key"],
 )
 
 
@@ -79,7 +79,9 @@ def health():
             session.execute(text("SELECT 1"))
         return {"status": "ok", "db": "connected"}
     except Exception as e:
-        return {"status": "degraded", "db": f"error: {e}"}
+        import logging
+        logging.getLogger(__name__).error("Health check DB error: %s", e)
+        return {"status": "degraded", "db": "error"}
 
 
 # ── Trace ingestion ───────────────────────────────────────────────────────────

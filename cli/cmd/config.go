@@ -58,7 +58,13 @@ func runConfigSet(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Fprintf(os.Stdout, "Config updated: %s = %s\n", key, value)
+	displayVal := value
+	if key == "api-key" && len(value) > 8 {
+		displayVal = value[:4] + "****" + value[len(value)-4:]
+	} else if key == "api-key" {
+		displayVal = "****"
+	}
+	fmt.Fprintf(os.Stdout, "Config updated: %s = %s\n", key, displayVal)
 	return nil
 }
 

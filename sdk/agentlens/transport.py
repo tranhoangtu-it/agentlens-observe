@@ -14,6 +14,21 @@ import httpx
 logger = logging.getLogger("agentlens.transport")
 
 _TIMEOUT = httpx.Timeout(5.0)
+_api_key: Optional[str] = None
+
+
+def set_api_key(key: str) -> None:
+    """Set the API key for authenticated transport."""
+    global _api_key
+    _api_key = key
+
+
+def _auth_headers() -> dict:
+    """Build auth headers if API key is configured."""
+    if _api_key:
+        return {"X-API-Key": _api_key}
+    return {}
+
 
 # --- Batch transport state (module-level, opt-in) ---
 _batch_lock = threading.Lock()
@@ -142,8 +157,9 @@ def post_trace(
 
     def _send():
         try:
+            headers = {"Content-Type": "application/json", **_auth_headers()}
             with httpx.Client(timeout=_TIMEOUT) as client:
-                resp = client.post(url, json=payload)
+                resp = client.post(url, json=payload, headers=headers)
                 if resp.status_code not in (200, 201):
                     logger.debug("AgentLens server returned %s", resp.status_code)
         except Exception as exc:
@@ -169,8 +185,9 @@ def post_spans(
 
     def _send():
         try:
+            headers = {"Content-Type": "application/json", **_auth_headers()}
             with httpx.Client(timeout=_TIMEOUT) as client:
-                resp = client.post(url, json=payload)
+                resp = client.post(url, json=payload, headers=headers)
                 if resp.status_code not in (200, 201):
                     logger.debug(
                         "AgentLens incremental transport returned %s for trace %s",

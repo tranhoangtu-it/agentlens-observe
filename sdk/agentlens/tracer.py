@@ -217,6 +217,7 @@ class Tracer:
     def configure(
         self,
         server_url: str,
+        api_key: Optional[str] = None,
         streaming: bool = False,
         batch: bool = False,
         batch_max_size: int = 10,
@@ -226,17 +227,18 @@ class Tracer:
 
         Args:
             server_url: Base URL of the AgentLens server.
+            api_key: API key for authentication (X-API-Key header).
             streaming: When True, completed spans are sent immediately as they
                        finish rather than waiting for the full trace to complete.
-                       Enables live topology updates in the dashboard.
-            batch: When True, traces are queued and flushed in batches instead
-                   of individual HTTP calls.  Reduces network overhead for
-                   high-throughput workloads.
+            batch: When True, traces are queued and flushed in batches.
             batch_max_size: Flush batch when this many traces accumulate.
             batch_flush_interval: Auto-flush batch every N seconds.
         """
         self._server_url = server_url
         self._streaming = streaming
+        if api_key:
+            from .transport import set_api_key
+            set_api_key(api_key)
         if batch:
             from .transport import configure_batch
             configure_batch(
