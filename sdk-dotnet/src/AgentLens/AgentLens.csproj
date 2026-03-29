@@ -2,7 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <PackageId>AgentLens.Observe</PackageId>
-    <Version>0.1.0</Version>
+    <Version>1.0.0</Version>
     <Description>Debug AI agents visually — .NET SDK for AgentLens</Description>
     <Authors>AgentLens Contributors</Authors>
     <Nullable>enable</Nullable>
