@@ -18,3 +18,7 @@ cli/agentlens.exe
 vscode-extension/out/
 sdk-dotnet/**/bin/
 sdk-dotnet/**/obj/
+
+# Local-only directories (not tracked in git)
+docs/
+plans/
